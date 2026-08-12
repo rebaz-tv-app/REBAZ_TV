@@ -22,7 +22,7 @@ jobs:
         distribution: 'zulu'
         java-version: '17'
 
-    - name: Setup Android Project for REBAZ TV
+    - name: Setup Android Project
       run: |
         mkdir -p app/src/main/assets
         mkdir -p app/src/main/java/com/rebaz/rebaztvnew
@@ -44,8 +44,6 @@ jobs:
         
         if [ -f "splash.png" ]; then cp splash.png app/src/main/res/drawable/splash_img.png
         elif [ -f "splash.jpg" ]; then cp splash.jpg app/src/main/res/drawable/splash_img.png
-        elif [ -f "logo.png" ]; then cp logo.png app/src/main/res/drawable/splash_img.png
-        elif [ -f "logo.jpg" ]; then cp logo.jpg app/src/main/res/drawable/splash_img.png
         else curl -L -o app/src/main/res/drawable/splash_img.png "https://upload.wikimedia.org/wikipedia/commons/c/cf/ExoPlayer_logo.png"; fi
 
         if [ -f "logo.png" ]; then cp logo.png app/src/main/res/drawable/ic_launcher.png
@@ -147,34 +145,8 @@ jobs:
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:background="#00000000">
-            
-            <ImageButton 
-                android:id="@+id/custom_close_btn" 
-                android:layout_width="50dp" 
-                android:layout_height="50dp" 
-                android:layout_alignParentTop="true" 
-                android:layout_alignParentEnd="true" 
-                android:layout_marginTop="12dp" 
-                android:layout_marginEnd="12dp" 
-                android:background="@android:color/transparent" 
-                android:src="@drawable/ic_close" 
-                android:tint="#EF4444"
-                android:focusable="true"
-                android:nextFocusDown="@+id/exo_fullscreen" />
-                
-            <ImageButton 
-                android:id="@+id/exo_fullscreen" 
-                android:layout_width="50dp" 
-                android:layout_height="50dp" 
-                android:layout_alignParentBottom="true" 
-                android:layout_alignParentStart="true" 
-                android:layout_marginStart="12dp" 
-                android:layout_marginBottom="12dp" 
-                android:background="@android:color/transparent" 
-                android:src="@drawable/ic_fullscreen" 
-                android:tint="#FFFFFF"
-                android:focusable="true"
-                android:nextFocusUp="@+id/custom_close_btn" />
+            <ImageButton android:id="@+id/custom_close_btn" android:layout_width="50dp" android:layout_height="50dp" android:layout_alignParentTop="true" android:layout_alignParentEnd="true" android:background="@android:color/transparent" android:src="@drawable/ic_close" android:tint="#EF4444" android:focusable="true"/>
+            <ImageButton android:id="@+id/exo_fullscreen" android:layout_width="50dp" android:layout_height="50dp" android:layout_alignParentBottom="true" android:layout_alignParentStart="true" android:background="@android:color/transparent" android:src="@drawable/ic_fullscreen" android:tint="#FFFFFF" android:focusable="true"/>
         </RelativeLayout>
         EOF
         
@@ -186,7 +158,10 @@ jobs:
             <uses-feature android:name="android.software.leanback" android:required="false" />
 
             <application android:allowBackup="true" android:label="REBAZ TV APP" android:icon="@drawable/ic_launcher" android:theme="@style/Theme.AppCompat.Light.NoActionBar" android:usesCleartextTraffic="true" android:hardwareAccelerated="true">
-                <activity android:name=".MainActivity" android:exported="true" android:configChanges="orientation|screenSize|keyboardHidden|layoutDirection">
+                <activity android:name=".MainActivity" 
+                          android:exported="true" 
+                          android:screenOrientation="sensorLandscape"
+                          android:configChanges="orientation|screenSize|keyboardHidden|layoutDirection">
                     <intent-filter>
                         <action android:name="android.intent.action.MAIN" />
                         <category android:name="android.intent.category.LAUNCHER" />
@@ -215,9 +190,7 @@ jobs:
         import android.widget.FrameLayout; 
         import android.widget.RelativeLayout; 
         import androidx.appcompat.app.AppCompatActivity;
-        
         import androidx.media3.common.MediaItem;
-        import androidx.media3.common.PlaybackException;
         import androidx.media3.common.Player;
         import androidx.media3.exoplayer.ExoPlayer;
         import androidx.media3.ui.PlayerView;
@@ -225,182 +198,66 @@ jobs:
         public class MainActivity extends AppCompatActivity {
             private WebView wv;
             private ExoPlayer player;
-            private PlayerView playerView;
             private FrameLayout playerContainer; 
-            private View splashScreen;
-            private boolean isFullscreen = false;
             
-            private Handler timeoutHandler = new Handler(Looper.getMainLooper());
-            private String fallbackUrl = "";
-
             @Override
             protected void onCreate(Bundle savedInstanceState) {
                 super.onCreate(savedInstanceState);
+                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE);
                 setContentView(R.layout.activity_main);
 
                 playerContainer = findViewById(R.id.player_container);
-                playerView = findViewById(R.id.exo_player_view);
+                PlayerView playerView = findViewById(R.id.exo_player_view);
                 wv = findViewById(R.id.main_web_view);
-                splashScreen = findViewById(R.id.splash_screen);
-
-                wv.setBackgroundColor(Color.TRANSPARENT);
-
-                new Handler(Looper.getMainLooper()).postDelayed(() -> {
-                    if (splashScreen != null) {
-                        splashScreen.setVisibility(View.GONE);
-                        wv.requestFocus();
-                    }
-                }, 3000);
+                
+                new Handler(Looper.getMainLooper()).postDelayed(() -> findViewById(R.id.splash_screen).setVisibility(View.GONE), 3000);
 
                 player = new ExoPlayer.Builder(this).build();
                 playerView.setPlayer(player);
                 
-                player.addListener(new Player.Listener() {
-                    @Override
-                    public void onPlaybackStateChanged(int playbackState) {
-                        if (playbackState == Player.STATE_READY) {
-                            timeoutHandler.removeCallbacksAndMessages(null); 
-                        }
-                    }
-
-                    @Override
-                    public void onPlayerError(PlaybackException error) {
-                        timeoutHandler.removeCallbacksAndMessages(null);
-                        triggerFallback();
-                    }
-                });
-
-                View closeBtn = findViewById(R.id.custom_close_btn);
-                if (closeBtn != null) closeBtn.setOnClickListener(v -> stopAndHidePlayer());
+                findViewById(R.id.custom_close_btn).setOnClickListener(v -> stopAndHidePlayer());
                 
-                View fullscreenBtn = findViewById(R.id.exo_fullscreen);
-                if (fullscreenBtn != null) fullscreenBtn.setOnClickListener(v -> toggleFullscreen(!isFullscreen));
-
-                initWebViewAndLoad();
-            }
-
-            private void initWebViewAndLoad() {
                 WebSettings ws = wv.getSettings();
-                ws.setJavaScriptEnabled(true); 
-                ws.setDomStorageEnabled(true); 
-                ws.setCacheMode(WebSettings.LOAD_NO_CACHE);
-                wv.clearCache(true);
-                
+                ws.setJavaScriptEnabled(true);
                 wv.addJavascriptInterface(new Object() {
-                    
-                    @JavascriptInterface
-                    public void playInExo(final String url1, final String url2, final String name) {
-                        runOnUiThread(() -> {
-                            fallbackUrl = url2;
-                            startPlayback(url1, true);
-                        });
-                    }
-
                     @JavascriptInterface
                     public void playInExo(final String url, final String name) {
                         runOnUiThread(() -> {
-                            fallbackUrl = ""; 
-                            startPlayback(url, true);
+                            playerContainer.setVisibility(View.VISIBLE);
+                            player.setMediaItem(MediaItem.fromUri(url));
+                            player.prepare();
+                            player.play();
                         });
                     }
                 }, "AndroidBridge");
-
-                wv.setWebViewClient(new WebViewClient());
-                wv.setWebChromeClient(new WebChromeClient());
                 wv.loadUrl("https://rebaz92.github.io/REBAZ_TV/index.html"); 
             }
 
-            private void startPlayback(String url, boolean isFirstLink) {
-                if (url == null || url.isEmpty()) return;
-                
-                getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-                int heightPx = (int) (240 * getResources().getDisplayMetrics().density);
-                RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, heightPx);
-                params.addRule(RelativeLayout.ALIGN_PARENT_TOP);
-                playerContainer.setLayoutParams(params);
-                playerContainer.setVisibility(View.VISIBLE);
-                
-                player.setMediaItem(MediaItem.fromUri(url));
-                player.prepare();
-                player.play();
-
-                timeoutHandler.removeCallbacksAndMessages(null);
-                
-                if (isFirstLink && fallbackUrl != null && !fallbackUrl.isEmpty()) {
-                    timeoutHandler.postDelayed(() -> {
-                        triggerFallback();
-                    }, 10000); 
-                }
-            }
-            
-            private void triggerFallback() {
-                if (fallbackUrl != null && !fallbackUrl.isEmpty()) {
-                    String tempUrl = fallbackUrl;
-                    fallbackUrl = ""; 
-                    startPlayback(tempUrl, false);
-                }
-            }
-
             private void stopAndHidePlayer() {
-                if (player != null) { 
-                    player.stop();
-                    player.clearMediaItems();
-                }
-                timeoutHandler.removeCallbacksAndMessages(null);
+                player.stop();
                 playerContainer.setVisibility(View.GONE);
-                getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
                 wv.requestFocus();
-                
-                if (isFullscreen) {
-                    setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-                    getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
-                    isFullscreen = false;
-                }
-            }
-
-            private void toggleFullscreen(boolean fullscreen) {
-                isFullscreen = fullscreen;
-                if (fullscreen) {
-                    setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE);
-                    getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
-                    playerContainer.setLayoutParams(new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-                } else {
-                    setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-                    getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
-                    int heightPx = (int) (240 * getResources().getDisplayMetrics().density);
-                    RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, heightPx);
-                    params.addRule(RelativeLayout.ALIGN_PARENT_TOP);
-                    playerContainer.setLayoutParams(params);
-                }
             }
 
             @Override public void onBackPressed() {
-                if (isFullscreen) stopAndHidePlayer();
-                else if (playerContainer.getVisibility() == View.VISIBLE) stopAndHidePlayer();
+                if (playerContainer.getVisibility() == View.VISIBLE) stopAndHidePlayer();
                 else super.onBackPressed();
             }
 
-            @Override
-            protected void onDestroy() {
-                super.onDestroy();
-                if (player != null) {
-                    player.release();
-                }
-                timeoutHandler.removeCallbacksAndMessages(null);
-            }
+            @Override protected void onDestroy() { super.onDestroy(); player.release(); }
         }
         EOF
         
         gradle wrapper --gradle-version 8.5
         chmod +x gradlew
 
-    - name: Build REBAZ TV APK
+    - name: Build APK
       run: |
-        ./gradlew assembleDebug --stacktrace
-        mv app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/rebaz.tv.new.apk
+        ./gradlew assembleDebug
+        mv app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/REBAZ_TV_APP.apk
 
-    - name: Upload Finished REBAZ TV APK
+    - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
-        name: REBAZ-TV-APK
-        path: app/build/outputs/apk/debug/rebaz.tv.new.apk
+        name: REBAZ-TV-APP
+        path: app/build/outputs/apk/debug/REBAZ_TV_APP.apk
