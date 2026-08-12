@@ -1,390 +1,71 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ku">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>REBAZ TV - Live TV</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <title>REBAZ TV</title>
     <style>
-        :root {
-            --bg-color: #171321;
-            --border-color: rgba(255, 255, 255, 0.15);
-            --highlight-yellow: #facc15;
-            --text-main: #ffffff;
-            --text-muted: #94a3b8;
-            --item-bg: rgba(255, 255, 255, 0.04);
-            --item-focus-bg: rgba(255, 255, 255, 0.12);
-        }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            user-select: none;
-        }
-
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
-
-        /* Top Bar */
-        .top-bar {
-            display: flex;
-            align-items: center;
-            padding: 18px 30px;
-            border-bottom: 1px solid var(--border-color);
-            height: 80px;
-        }
-
-        .back-btn {
-            background: rgba(255, 255, 255, 0.08);
-            border: none;
-            color: white;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 16px;
-            margin-right: 20px;
+        body { background: #171321; color: white; font-family: sans-serif; margin: 0; padding: 0; }
+        .list-container { padding: 20px; }
+        .channel-item { 
+            background: rgba(255, 255, 255, 0.1); 
+            padding: 15px; 
+            margin-bottom: 10px; 
+            border-radius: 8px; 
+            display: flex; 
+            align-items: center; 
             cursor: pointer;
-        }
-        .back-btn:focus { border: 2px solid white; outline: none; }
-
-        .page-title {
-            font-size: 24px;
-            font-weight: 600;
-            flex: 1;
-        }
-
-        .search-container {
-            position: relative;
-            margin-right: 25px;
-        }
-
-        .search-input {
-            background: rgba(255, 255, 255, 0.08);
             border: 1px solid transparent;
-            border-radius: 25px;
-            padding: 10px 40px 10px 20px;
-            color: white;
-            width: 300px;
-            font-size: 15px;
-            outline: none;
         }
-        .search-input:focus { border-color: white; }
-
-        .search-icon {
-            position: absolute;
-            right: 15px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--text-muted);
-        }
-
-        .nav-icons {
-            display: flex;
-            gap: 12px;
-        }
-
-        .nav-icon {
-            background: rgba(255, 255, 255, 0.08);
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--text-muted);
-            cursor: pointer;
-            border: 2px solid transparent;
-        }
-        .nav-icon:focus { border: 2px solid white; color: white; outline: none; }
-
-        /* Main Content Layout (3 Columns) */
-        .main-content {
-            display: flex;
-            flex: 1;
-            height: calc(100vh - 80px);
-        }
-
-        .col {
-            padding: 20px;
-            overflow-y: auto;
-        }
-        .col::-webkit-scrollbar { display: none; }
-
-        /* Column 1: Categories */
-        .col-categories {
-            width: 26%;
-            border-right: 1px solid var(--border-color);
-        }
-
-        .category-search-box {
-            padding: 14px 15px;
-            border: 1px solid var(--border-color);
-            margin-bottom: 12px;
-            font-size: 16px;
-            border-radius: 6px;
-            color: var(--text-muted);
-            background: var(--item-bg);
-        }
-        .category-search-box:focus { border: 2px solid white; color: white; outline: none; }
-
-        .cat-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 14px 15px;
-            margin-bottom: 6px;
-            background: var(--item-bg);
-            border: 2px solid transparent;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 16px;
-        }
-        .cat-item:focus { border-color: white; background: var(--item-focus-bg); outline: none; }
-        .cat-item.active { color: var(--highlight-yellow); }
-
-        /* Column 2: Channels List */
-        .col-channels {
-            width: 34%;
-            border-right: 1px solid var(--border-color);
-        }
-
-        .channel-item {
-            display: flex;
-            align-items: center;
-            padding: 14px 15px;
-            margin-bottom: 8px;
-            background: var(--item-bg);
-            border: 2px solid transparent;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 17px;
-            transition: 0.1s;
-        }
-        .channel-item:focus {
-            border-color: var(--highlight-yellow);
-            background: var(--item-focus-bg);
-            color: var(--highlight-yellow);
-            outline: none;
-        }
-
-        .channel-num {
-            width: 35px;
-            color: var(--text-main);
-            font-weight: 500;
-        }
-
-        .channel-icon-box {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 6px 10px;
-            border-radius: 4px;
-            margin-right: 15px;
-            color: white;
-        }
-
-        /* Column 3: Preview */
-        .col-preview {
-            width: 40%;
-            display: flex;
-            flex-direction: column;
-            padding: 25px;
-        }
-
-        .preview-screen {
-            width: 100%;
-            aspect-ratio: 16/9;
-            background-color: #000;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            background-image: url('https://images.unsplash.com/photo-1470071131384-001b85755b36?auto=format&fit=crop&w=800&q=80');
-            background-size: cover;
-            background-position: center;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-        }
-
-        .preview-title {
-            font-size: 24px;
-            font-weight: 600;
-            margin-bottom: auto;
-        }
-
-        .bottom-actions {
-            display: flex;
-            gap: 25px;
-            font-size: 15px;
-        }
-
-        .action-btn {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            color: var(--text-muted);
-            background: transparent;
-            border: none;
-            cursor: pointer;
-            padding-bottom: 4px;
-            border-bottom: 2px solid transparent;
-        }
-        .action-btn:focus { color: white; outline: none; }
-        .action-btn.active { color: white; border-bottom-color: #ef4444; }
+        .channel-item:hover { border-color: yellow; }
+        .channel-num { margin-right: 15px; font-weight: bold; color: yellow; }
     </style>
 </head>
 <body>
 
-    <!-- Top Navigation Bar -->
-    <div class="top-bar">
-        <button class="back-btn" tabindex="0"><i class="fa-solid fa-chevron-left"></i></button>
-        <div class="page-title">Live TV</div>
-        
-        <div class="search-container">
-            <input type="text" class="search-input" placeholder="Search" tabindex="0">
-            <i class="fa-solid fa-magnifying-glass search-icon"></i>
-        </div>
-
-        <div class="nav-icons">
-            <div class="nav-icon" tabindex="0"><i class="fa-solid fa-tv"></i></div>
-            <div class="nav-icon" tabindex="0"><i class="fa-solid fa-film"></i></div>
-            <div class="nav-icon" tabindex="0"><i class="fa-regular fa-circle-play"></i></div>
-            <div class="nav-icon" tabindex="0"><i class="fa-solid fa-gear"></i></div>
-        </div>
-    </div>
-
-    <!-- Main Workspace -->
-    <div class="main-content">
-        
-        <!-- Column 1: Categories -->
-        <div class="col col-categories">
-            <div class="category-search-box" tabindex="0">Search in categories</div>
-            <div class="cat-item active" tabindex="0">
-                <span>All</span>
-                <span id="all-count">0</span>
-            </div>
-            <div class="cat-item" tabindex="0">
-                <span>Recently Viewed</span>
-                <span>0</span>
-            </div>
-            <div class="cat-item" tabindex="0">
-                <span>Favorite</span>
-                <span>0</span>
-            </div>
-            <div class="cat-item" tabindex="0">
-                <span>General</span>
-                <span id="general-count">0</span>
-            </div>
-        </div>
-
-        <!-- Column 2: Channels List (Dynamic from M3U) -->
-        <div class="col col-channels" id="channel-list-container">
-            <div class="channel-item" tabindex="0">
-                <span class="channel-num">1</span>
-                <div class="channel-icon-box"><i class="fa-solid fa-clapperboard"></i></div>
-                <span>بارکردنی کەناڵەکان...</span>
-            </div>
-        </div>
-
-        <!-- Column 3: Preview Panel -->
-        <div class="col col-preview">
-            <div class="preview-screen"></div>
-            <div class="preview-title" id="preview-title-text">Live TV Preview</div>
-
-            <div class="bottom-actions">
-                <button class="action-btn active" tabindex="0">
-                    <i class="fa-regular fa-heart"></i> Favorite
-                </button>
-                <button class="action-btn" tabindex="0">
-                    <i class="fa-regular fa-clock"></i> Catch Up
-                </button>
-                <button class="action-btn" tabindex="0">
-                    <i class="fa-regular fa-circle-play"></i> External players
-                </button>
-            </div>
-        </div>
-
+    <div class="list-container" id="list">
+        <h3>خەریکی بارکردنی کەناڵەکان...</h3>
     </div>
 
     <script>
-        // لینکی پلەی لیستەکەت
         const M3U_URL = "https://raw.githubusercontent.com/rebaz92/Xurmatw/refs/heads/main/xurmatw";
 
-        async function loadPlaylist() {
+        async function loadChannels() {
             try {
                 const response = await fetch(M3U_URL);
-                const data = await response.text();
-                parseM3U(data);
-            } catch (error) {
-                console.error("Error loading M3U:", error);
-                document.getElementById('channel-list-container').innerHTML = 
-                    `<div class="channel-item"><span class="channel-num">!</span><span>کێشە لە هێنانی لیستەکە هەیە</span></div>`;
-            }
-        }
+                const text = await response.text();
+                const lines = text.split('\n');
+                const list = document.getElementById('list');
+                list.innerHTML = '';
 
-        function parseM3U(data) {
-            const lines = data.split('\n');
-            const container = document.getElementById('channel-list-container');
-            container.innerHTML = '';
+                let count = 1;
+                for (let i = 0; i < lines.length; i++) {
+                    if (lines[i].startsWith('#EXTINF:')) {
+                        // دۆزینەوەی ناوی کەناڵ دوای فاریزە
+                        let name = lines[i].split(',')[1] || "کەناڵی نەناسراو";
+                        let url = lines[i+1] ? lines[i+1].trim() : '';
 
-            let channels = [];
-            let currentName = '';
-
-            for (let i = 0; i < lines.length; i++) {
-                let line = lines[i].trim();
-                if (line.startsWith('#EXTINF:')) {
-                    let match = line.match(/,(.+)$/);
-                    currentName = match ? match[1].trim() : 'کەناڵ';
-                } else if (line.startsWith('http')) {
-                    channels.push({ name: currentName, url: line });
-                }
-            }
-
-            // نوێکردنەوەی ژمارەی کەناڵەکان لە بەشی چەپ (Categories)
-            document.getElementById('all-count').innerText = channels.length;
-            document.getElementById('general-count').innerText = channels.length;
-
-            if (channels.length === 0) {
-                container.innerHTML = `<div class="channel-item">هیچ کەناڵێک نەدۆزراوەتەوە</div>`;
-                return;
-            }
-
-            // دروستکردنی لیستی کەناڵەکان بە دیزاینی داواکراو
-            channels.forEach((ch, index) => {
-                let item = document.createElement('div');
-                item.className = 'channel-item';
-                item.tabIndex = 0;
-
-                let numStr = (index + 1);
-                item.innerHTML = `
-                    <span class="channel-num">${numStr}</span>
-                    <div class="channel-icon-box"><i class="fa-solid fa-clapperboard"></i></div>
-                    <span>${ch.name}</span>
-                `;
-
-                // کاتێک لەسەر کەناڵێک دەبیت و کلیك دەکەیت (یان Enter دەدەیت لەسەر TV)
-                item.onfocus = () => {
-                    document.getElementById('preview-title-text').innerText = numStr + ". " + ch.name;
-                };
-
-                item.onclick = () => {
-                    document.getElementById('preview-title-text').innerText = numStr + ". " + ch.name;
-                    if (typeof AndroidBridge !== 'undefined') {
-                        AndroidBridge.playInExo(ch.url, ch.name);
+                        if (url.startsWith('http')) {
+                            let div = document.createElement('div');
+                            div.className = 'channel-item';
+                            div.innerHTML = `<span class="channel-num">${count}</span><span>${name}</span>`;
+                            div.onclick = () => {
+                                if (typeof AndroidBridge !== 'undefined') {
+                                    AndroidBridge.playInExo(url, name);
+                                } else {
+                                    alert("کەناڵەکە کار ناکات: " + url);
+                                }
+                            };
+                            list.appendChild(div);
+                            count++;
+                        }
                     }
-                };
-
-                container.appendChild(item);
-            });
+                }
+            } catch (e) {
+                document.getElementById('list').innerHTML = "هەڵە لە هێنانی لیستەکە: " + e;
+            }
         }
-
-        window.onload = loadPlaylist;
+        loadChannels();
     </script>
 </body>
 </html>
