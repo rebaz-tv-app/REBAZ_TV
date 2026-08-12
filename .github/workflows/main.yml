@@ -25,7 +25,7 @@ jobs:
     - name: Setup Android Project for REBAZ TV
       run: |
         mkdir -p app/src/main/assets
-        mkdir -p app/src/main/java/com/rebaz/rebaztv
+        mkdir -p app/src/main/java/com/rebaz/rebaztvnew
         mkdir -p app/src/main/res/values
         mkdir -p app/src/main/res/layout
         mkdir -p app/src/main/res/drawable
@@ -67,10 +67,10 @@ jobs:
         cat << 'EOF' > app/build.gradle
         plugins { id 'com.android.application' }
         android {
-            namespace 'com.rebaz.rebaztv'
+            namespace 'com.rebaz.rebaztvnew'
             compileSdk 34
             defaultConfig {
-                applicationId "com.rebaz.rebaztv"
+                applicationId "com.rebaz.rebaztvnew"
                 minSdk 21
                 targetSdk 34
                 versionCode 1
@@ -185,7 +185,7 @@ jobs:
             <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
             <uses-feature android:name="android.software.leanback" android:required="false" />
 
-            <application android:allowBackup="true" android:label="REBAZ TV" android:icon="@drawable/ic_launcher" android:theme="@style/Theme.AppCompat.Light.NoActionBar" android:usesCleartextTraffic="true" android:hardwareAccelerated="true">
+            <application android:allowBackup="true" android:label="REBAZ TV APP" android:icon="@drawable/ic_launcher" android:theme="@style/Theme.AppCompat.Light.NoActionBar" android:usesCleartextTraffic="true" android:hardwareAccelerated="true">
                 <activity android:name=".MainActivity" android:exported="true" android:configChanges="orientation|screenSize|keyboardHidden|layoutDirection">
                     <intent-filter>
                         <action android:name="android.intent.action.MAIN" />
@@ -197,8 +197,8 @@ jobs:
         </manifest>
         EOF
         
-        cat << 'EOF' > app/src/main/java/com/rebaz/rebaztv/MainActivity.java
-        package com.rebaz.rebaztv;
+        cat << 'EOF' > app/src/main/java/com/rebaz/rebaztvnew/MainActivity.java
+        package com.rebaz.rebaztvnew;
         import android.content.pm.ActivityInfo;
         import android.graphics.Color;
         import android.os.Bundle;
@@ -397,11 +397,10 @@ jobs:
     - name: Build REBAZ TV APK
       run: |
         ./gradlew assembleDebug --stacktrace
-        mv app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/rebaz.tv.apk
+        mv app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/rebaz.tv.new.apk
 
     - name: Upload Finished REBAZ TV APK
       uses: actions/upload-artifact@v4
       with:
         name: REBAZ-TV-APK
-        path: app/build/outputs/apk/debug/rebaz.tv.apk
-
+        path: app/build/outputs/apk/debug/rebaz.tv.new.apk
