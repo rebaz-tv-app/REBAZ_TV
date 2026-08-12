@@ -1,1 +1,120 @@
+<!DOCTYPE html>
+<html lang="ku" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>REBAZ TV</title>
+    <style>
+        body {
+            background-color: #0A0E17;
+            color: white;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            /* بۆ ئەوەی لە کاتی لێدانی ڤیدیۆ بەشی پشتەوە ڕوون بێت */
+            background: transparent; 
+        }
+        .header {
+            text-align: center;
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #38bdf8;
+        }
+        .channel-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+            padding-top: 250px; /* بۆ ئەوەی نەچێتە ژێر پلەیەرەکەی سەرەوە */
+        }
+        .channel-btn {
+            background-color: #1e293b;
+            border: 2px solid #334155;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            font-size: 18px;
+            cursor: pointer;
+            width: 200px;
+            text-align: center;
+            transition: all 0.3s;
+        }
+        .channel-btn:hover, .channel-btn:focus {
+            background-color: #38bdf8;
+            border-color: #bae6fd;
+            transform: scale(1.05);
+            outline: none; /* گرنگە بۆ تەلەفزیۆن کە فۆکەس وەردەگرێت */
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">لیستی کەناڵەکان</div>
+    
+    <div class="channel-container" id="channel-list">
+        <!-- کەناڵەکان لێرەدا دروست دەبن -->
+        <p id="loading-text">چاوەڕێ بە بۆ هێنانەی کەناڵەکان...</p>
+    </div>
+
+    <script>
+        // لێرەدا لینکی فایلی m3u ی خۆت دابنێ (پێویستە لینکی raw بێت)
+        const M3U_URL = "https://raw.githubusercontent.com/rebaz92/ناوی-ڕیپۆزتۆری/main/ناوی-فایل.m3u";
+
+        async function loadPlaylist() {
+            try {
+                const response = await fetch(M3U_URL);
+                const data = await response.text();
+                parseM3U(data);
+            } catch (error) {
+                document.getElementById('loading-text').innerText = "کێشە هەیە لە هێنانی لیستەکە!";
+                console.error("Error loading playlist:", error);
+            }
+        }
+
+        function parseM3U(data) {
+            const lines = data.split('\n');
+            const container = document.getElementById('channel-list');
+            container.innerHTML = ''; // سڕینەوەی تێکستی لۆدینگ
+
+            let currentName = '';
+
+            for (let i = 0; i < lines.length; i++) {
+                let line = lines[i].trim();
+
+                // هێنانی ناوی کەناڵەکە
+                if (line.startsWith('#EXTINF:')) {
+                    let nameMatch = line.match(/,(.+)$/);
+                    currentName = nameMatch ? nameMatch[1].trim() : 'کەناڵی نەناسراو';
+                }
+                // هێنانی لینکی کەناڵەکە (لینکی جۆری http یان https)
+                else if (line.startsWith('http')) {
+                    let streamUrl = line;
+
+                    // دروستکردنی دوگمە بۆ کەناڵەکە
+                    let btn = document.createElement('button');
+                    btn.className = 'channel-btn';
+                    btn.innerText = currentName;
+                    
+                    // گرنگ: کارپێکردنی کۆدی ئەندرۆیدەکە لە کاتی کلیک کردن
+                    btn.onclick = () => {
+                        if (typeof AndroidBridge !== 'undefined') {
+                            // لەبەر ئەوەی m3u ی ئاسایی تەنها یەک لینکی هەیە بۆ هەر کەناڵێک
+                            AndroidBridge.playInExo(streamUrl, streamUrl, currentName);
+                        } else {
+                            alert("ئەمە تەنها لەناو ئەپەکەی REBAZ TV کار دەکات.");
+                        }
+                    };
+                    
+                    container.appendChild(btn);
+                }
+            }
+        }
+
+        // کاتێک پەڕەکە کرایەوە ڕاستەوخۆ لیستەکە بهێنە
+        window.onload = loadPlaylist;
+    </script>
+
+</body>
+</html>
 
