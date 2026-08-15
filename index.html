@@ -100,9 +100,6 @@
     let currentCategory = 'all';
     let recentlyViewed = [1];
 
-    // دروستکردنی خاڵی مێژوو بۆ کۆنتڕۆڵکردنی دوگمەی گەڕانەوە لە WebView
-    history.pushState({ page: 'main' }, '', window.location.href);
-
     function updateCounts() {
       document.getElementById('count-all').textContent = channels.length;
       document.getElementById('count-recent').textContent = recentlyViewed.length;
@@ -177,7 +174,7 @@
     function enterFullScreen() {
       if (!videoWrapper.classList.contains('fullscreen-mode')) {
         videoWrapper.classList.add('fullscreen-mode');
-        // زیادکردنی مێژوو بۆ ئەوەی دوگمەی گەڕانەوە ئەم دۆخە بگرێت و ئەپەکە نەداخات
+        // خاڵێکی سەرەکی: کاتێک دەچێتە فول سکرین مێژوویەک زیاد دەکەین تەنها بۆ گرتنی دوگمەی گەڕانەوە
         history.pushState({ fullscreen: true }, '', window.location.href);
       }
     }
@@ -192,20 +189,21 @@
       }
     }
 
-    // گرتنی فەرمانی دوگمەی گەڕانەوە (Back button) لەڕێگەی History API و KeyDownەوە
+    // چارەسەری کۆتایی بۆ دوگمەی گەڕانەوەی کۆنترۆڵ (بەبێ ئەوەی ئەپەکە دابخات)
     window.addEventListener('popstate', (e) => {
       if (videoWrapper.classList.contains('fullscreen-mode')) {
         exitFullScreen();
-        history.pushState({ page: 'main' }, '', window.location.href);
+        // لێرەدا پێویست ناکات مێژوو دروست بکەینەوە، چونکە تەلەفزیۆنەکە گەڕاوەتەوە سەر پەڕە سەرەکییەکە
       }
     });
 
+    // گرتنی کۆدەکانی دوگمە لە کیبۆرد و کۆنترۆڵەکان
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' || e.key === 'Backspace' || e.keyCode === 27 || e.keyCode === 8 || e.keyCode === 4) {
+      // 4 = دۆگمەی گەڕانەوە لە ئەندرۆید، 27 = Escape، 8 = Backspace
+      if (e.key === 'Escape' || e.key === 'Backspace' || e.keyCode === 27 || e.keyCode === 8 || e.keyCode === 4 || e.keyCode === 10009) {
         if (videoWrapper.classList.contains('fullscreen-mode')) {
           e.preventDefault();
-          exitFullScreen();
-          history.pushState({ page: 'main' }, '', window.location.href);
+          history.back(); // ئەمە خۆکارانە فەرمانی سەروو (popstate) کارپێدەکات و فول سکرین لادەبات
         }
       }
     });
