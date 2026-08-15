@@ -171,7 +171,8 @@
 
     function handleChannelSelection(channel, element) {
       if (activeChannelId === channel.id) {
-        toggleFullScreen();
+        // تەنیا دەبێتە فول سکرین و بە ئۆکە دەرناچێت
+        videoWrapper.classList.add('fullscreen-mode');
       } else {
         playChannel(channel, element);
       }
@@ -225,13 +226,9 @@
       }
     };
 
-    function toggleFullScreen() {
-      videoWrapper.classList.toggle('fullscreen-mode');
-    }
-
-    // کۆنتڕۆڵکردنی دوگمەی گەڕانەوە (Back / Escape ↪) بۆ لابردنی فول سکرین و گەڕانەوە بۆ سەر کەناڵەکان
+    // دەرچوون لە فول سکرین تەنیا بە دوگمەی گەڕانەوە (Back / Escape / Backspace)
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' || e.key === 'Backspace') {
+      if (e.key === 'Escape' || e.key === 'Backspace' || e.keyCode === 27 || e.keyCode === 8) {
         if (videoWrapper.classList.contains('fullscreen-mode')) {
           e.preventDefault();
           videoWrapper.classList.remove('fullscreen-mode');
