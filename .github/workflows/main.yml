@@ -1,58 +1,346 @@
-name: Build Android APK
+name: Build REBAZ TV APK
 
 on:
   push:
-    branches: ["main"]
+    branches: [ "main" ]
   workflow_dispatch:
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
+    - name: Checkout Source Code
+      uses: actions/checkout@v4
 
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'zulu'
-          java-version: '17'
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'zulu'
+        java-version: '17'
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
+    - name: Setup Android Project for REBAZ TV
+      run: |
+        mkdir -p app/src/main/assets
+        mkdir -p app/src/main/java/com/rebaz/rebaztv
+        mkdir -p app/src/main/res/values
+        mkdir -p app/src/main/res/layout
+        mkdir -p app/src/main/res/drawable
+        
+        cat << 'EOF' > app/src/main/res/drawable/ic_close.xml
+        <vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
+            <path android:fillColor="#FFFFFFFF" android:pathData="M19,6.41L17.59,5 12,10.59 6.41,5 5,6.41 10.59,12 5,17.59 6.41,19 12,13.41 17.59,19 19,17.59 13.41,12z"/>
+        </vector>
+        EOF
 
-      - name: Install Cordova
-        run: npm install -g cordova
+        cat << 'EOF' > app/src/main/res/drawable/ic_fullscreen.xml
+        <vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
+            <path android:fillColor="#FFFFFFFF" android:pathData="M7,14H5v5h5v-2H7V14z M5,10h2V7h3V5H5V10z M17,17h-3v2h5v-5h-2V17z M14,5v2h3v3h2V5H14z"/>
+        </vector>
+        EOF
+        
+        if [ -f "splash.png" ]; then cp splash.png app/src/main/res/drawable/splash_img.png
+        elif [ -f "splash.jpg" ]; then cp splash.jpg app/src/main/res/drawable/splash_img.png
+        elif [ -f "logo.png" ]; then cp logo.png app/src/main/res/drawable/splash_img.png
+        elif [ -f "logo.jpg" ]; then cp logo.jpg app/src/main/res/drawable/splash_img.png
+        else curl -L -o app/src/main/res/drawable/splash_img.png "https://upload.wikimedia.org/wikipedia/commons/c/cf/ExoPlayer_logo.png"; fi
 
-      - name: Create App
-        run: |
-          cordova create rebaz_app com.rebaztv.live "REBAZ TV"
-          rm -rf rebaz_app/www/*
-          cp index.html rebaz_app/www/
-          
-          # ئەم بەشە نوێیەیە بۆ ئەوەی ڕێگە لە کاش بگرێت
-          cat << 'EOF' > rebaz_app/config.xml
-          <?xml version='1.0' encoding='utf-8'?>
-          <widget id="com.rebaztv.live" version="1.0.0" xmlns="http://www.w3.org/ns/widgets">
-              <name>REBAZ TV</name>
-              <access origin="*" />
-              <allow-intent href="*" />
-              <preference name="ClearCacheMode" value="all" />
-              <preference name="AppendUserAgent" value="RebazTVApp" />
-          </widget>
-          EOF
+        if [ -f "logo.png" ]; then cp logo.png app/src/main/res/drawable/ic_launcher.png
+        elif [ -f "logo.jpg" ]; then cp logo.jpg app/src/main/res/drawable/ic_launcher.png
+        else curl -L -o app/src/main/res/drawable/ic_launcher.png "https://upload.wikimedia.org/wikipedia/commons/c/cf/ExoPlayer_logo.png"; fi
+        
+        echo "android.useAndroidX=true" > gradle.properties
+        echo "android.enableJetifier=true" >> gradle.properties
+        echo "include ':app'" > settings.gradle
+        
+        cat << 'EOF' > build.gradle
+        buildscript {
+            repositories { google(); mavenCentral() }
+            dependencies { classpath 'com.android.tools.build:gradle:8.2.2' }
+        }
+        allprojects { repositories { google(); mavenCentral() } }
+        EOF
+        
+        cat << 'EOF' > app/build.gradle
+        plugins { id 'com.android.application' }
+        android {
+            namespace 'com.rebaz.rebaztv'
+            compileSdk 34
+            defaultConfig {
+                applicationId "com.rebaz.rebaztv"
+                minSdk 21
+                targetSdk 34
+                versionCode 1
+                versionName "1.0.0"
+                ndk {
+                    abiFilters 'armeabi-v7a', 'arm64-v8a'
+                }
+            }
+            compileOptions {
+                sourceCompatibility JavaVersion.VERSION_17
+                targetCompatibility JavaVersion.VERSION_17
+            }
+            packaging {
+                resources {
+                    excludes += ['META-INF/DEPENDENCIES', 'META-INF/LICENSE', 'META-INF/NOTICE', 'META-INF/*.kotlin_module']
+                }
+                jniLibs {
+                    pickFirsts += ['**/*.so']
+                }
+            }
+        }
+        dependencies {
+            implementation 'androidx.appcompat:appcompat:1.6.1'
+            implementation 'com.google.android.material:material:1.11.0'
+            implementation 'org.videolan.android:libvlc-all:3.5.1'
+        }
+        EOF
 
-      - name: Build APK
-        working-directory: ./rebaz_app
-        run: |
-          cordova platform add android
-          cordova build android
+        cat << 'EOF' > app/src/main/res/layout/activity_main.xml
+        <?xml version="1.0" encoding="utf-8"?>
+        <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="#0A0E17">
 
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: REBAZ-TV-App
-          path: rebaz_app/platforms/android/app/build/outputs/apk/debug/app-debug.apk
+            <FrameLayout
+                android:id="@+id/player_container"
+                android:layout_width="match_parent"
+                android:layout_height="240dp"
+                android:layout_alignParentTop="true"
+                android:visibility="gone"
+                android:background="#000000">
+
+                <org.videolan.libvlc.util.VLCVideoLayout
+                    android:id="@+id/vlc_video_layout"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"/>
+
+                <include layout="@layout/custom_exo_controls" />
+            </FrameLayout>
+            
+            <WebView
+                android:id="@+id/main_web_view"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_below="@id/player_container"
+                android:background="@android:color/transparent"/>
+
+            <RelativeLayout
+                android:id="@+id/splash_screen"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="#0A0E17"
+                android:elevation="30dp"
+                android:gravity="center">
+
+                <ImageView
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:scaleType="centerCrop"
+                    android:src="@drawable/splash_img" />
+            </RelativeLayout>
+        </RelativeLayout>
+        EOF
+
+        cat << 'EOF' > app/src/main/res/layout/custom_exo_controls.xml
+        <?xml version="1.0" encoding="utf-8"?>
+        <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="#00000000">
+            <ImageButton android:id="@+id/custom_close_btn" android:layout_width="45dp" android:layout_height="45dp" android:layout_alignParentTop="true" android:layout_alignParentEnd="true" android:layout_marginTop="12dp" android:layout_marginEnd="12dp" android:background="@android:color/transparent" android:src="@drawable/ic_close" android:tint="#EF4444" />
+            <ImageButton android:id="@+id/exo_fullscreen" android:layout_width="45dp" android:layout_height="45dp" android:layout_alignParentBottom="true" android:layout_alignParentStart="true" android:layout_marginStart="12dp" android:layout_marginBottom="12dp" android:background="@android:color/transparent" android:src="@drawable/ic_fullscreen" android:tint="#FFFFFF" />
+        </RelativeLayout>
+        EOF
+        
+        cat << 'EOF' > app/src/main/AndroidManifest.xml
+        <?xml version="1.0" encoding="utf-8"?>
+        <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+            <uses-permission android:name="android.permission.INTERNET" />
+            <application android:allowBackup="true" android:label="REBAZ TV" android:icon="@drawable/ic_launcher" android:theme="@style/Theme.AppCompat.Light.NoActionBar" android:usesCleartextTraffic="true" android:hardwareAccelerated="true">
+                <activity android:name=".MainActivity" android:exported="true" android:configChanges="orientation|screenSize|keyboardHidden|layoutDirection">
+                    <intent-filter>
+                        <action android:name="android.intent.action.MAIN" />
+                        <category android:name="android.intent.category.LAUNCHER" />
+                    </intent-filter>
+                </activity>
+            </application>
+        </manifest>
+        EOF
+        
+        cat << 'EOF' > app/src/main/java/com/rebaz/rebaztv/MainActivity.java
+        package com.rebaz.rebaztv;
+        import android.content.pm.ActivityInfo;
+        import android.graphics.Color;
+        import android.net.Uri;
+        import android.os.Bundle;
+        import android.os.Handler;
+        import android.os.Looper;
+        import android.view.View;
+        import android.view.ViewGroup;
+        import android.view.WindowManager;
+        import android.webkit.JavascriptInterface;
+        import android.webkit.WebChromeClient;
+        import android.webkit.WebSettings;
+        import android.webkit.WebView;
+        import android.webkit.WebViewClient;
+        import android.widget.FrameLayout; 
+        import android.widget.RelativeLayout; 
+        import androidx.appcompat.app.AppCompatActivity;
+        
+        import org.videolan.libvlc.LibVLC;
+        import org.videolan.libvlc.Media;
+        import org.videolan.libvlc.MediaPlayer;
+        import org.videolan.libvlc.util.VLCVideoLayout;
+        import java.util.ArrayList;
+
+        public class MainActivity extends AppCompatActivity {
+            private WebView wv;
+            private LibVLC libVLC;
+            private MediaPlayer mediaPlayer;
+            private VLCVideoLayout vlcVideoLayout;
+            private FrameLayout playerContainer; 
+            private View splashScreen;
+            private boolean isFullscreen = false;
+
+            @Override
+            protected void onCreate(Bundle savedInstanceState) {
+                super.onCreate(savedInstanceState);
+                setContentView(R.layout.activity_main);
+
+                playerContainer = findViewById(R.id.player_container);
+                vlcVideoLayout = findViewById(R.id.vlc_video_layout);
+                wv = findViewById(R.id.main_web_view);
+                splashScreen = findViewById(R.id.splash_screen);
+
+                wv.setBackgroundColor(Color.TRANSPARENT);
+
+                new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                    if (splashScreen != null) {
+                        splashScreen.setVisibility(View.GONE);
+                    }
+                }, 3000);
+
+                ArrayList<String> options = new ArrayList<>();
+                options.add("--aout=opensles");
+                options.add("--audio-time-stretch");
+                options.add("-vvv");
+                libVLC = new LibVLC(this, options);
+                mediaPlayer = new MediaPlayer(libVLC);
+                mediaPlayer.attachViews(vlcVideoLayout, null, false, false);
+
+                View closeBtn = findViewById(R.id.custom_close_btn);
+                if (closeBtn != null) closeBtn.setOnClickListener(v -> stopAndHidePlayer());
+                
+                View fullscreenBtn = findViewById(R.id.exo_fullscreen);
+                if (fullscreenBtn != null) fullscreenBtn.setOnClickListener(v -> toggleFullscreen(!isFullscreen));
+
+                initWebViewAndLoad();
+            }
+
+            private void initWebViewAndLoad() {
+                WebSettings ws = wv.getSettings();
+                ws.setJavaScriptEnabled(true); 
+                ws.setDomStorageEnabled(true); 
+                ws.setCacheMode(WebSettings.LOAD_NO_CACHE);
+                wv.clearCache(true);
+                
+                wv.addJavascriptInterface(new Object() {
+                    @JavascriptInterface
+                    public void playInExo(final String url, final String name) {
+                        runOnUiThread(() -> {
+                            if (url != null && !url.isEmpty()) {
+                                getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+                                
+                                int heightPx = (int) (240 * getResources().getDisplayMetrics().density);
+                                RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, heightPx);
+                                params.addRule(RelativeLayout.ALIGN_PARENT_TOP);
+                                playerContainer.setLayoutParams(params);
+                                playerContainer.setVisibility(View.VISIBLE);
+                                
+                                mediaPlayer.stop();
+                                String cleanUrl = url.trim();
+                                Media media;
+                                try {
+                                    media = new Media(libVLC, Uri.parse(cleanUrl));
+                                } catch (Exception e) {
+                                    media = new Media(libVLC, android.net.Uri.parse(cleanUrl));
+                                }
+                                media.setHWDecoderEnabled(true, false);
+                                mediaPlayer.setMedia(media);
+                                media.release();
+                                mediaPlayer.play();
+                            }
+                        });
+                    }
+                }, "AndroidBridge");
+
+                wv.setWebViewClient(new WebViewClient());
+                wv.setWebChromeClient(new WebChromeClient());
+                wv.loadUrl("https://rebaz92.github.io/REBAZ_TV/index.html"); 
+            }
+
+            private void stopAndHidePlayer() {
+                if (mediaPlayer != null) { mediaPlayer.stop(); }
+                playerContainer.setVisibility(View.GONE);
+                getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+                
+                if (isFullscreen) {
+                    setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+                    getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+                    isFullscreen = false;
+                }
+            }
+
+            private void toggleFullscreen(boolean fullscreen) {
+                isFullscreen = fullscreen;
+                if (fullscreen) {
+                    setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE);
+                    getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+                    playerContainer.setLayoutParams(new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+                } else {
+                    setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+                    getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+                    int heightPx = (int) (240 * getResources().getDisplayMetrics().density);
+                    RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, heightPx);
+                    params.addRule(RelativeLayout.ALIGN_PARENT_TOP);
+                    playerContainer.setLayoutParams(params);
+                }
+            }
+
+            @Override public void onBackPressed() {
+                if (isFullscreen) stopAndHidePlayer();
+                else if (playerContainer.getVisibility() == View.VISIBLE) stopAndHidePlayer();
+                else super.onBackPressed();
+            }
+
+            @Override
+            protected void onDestroy() {
+                super.onDestroy();
+                if (mediaPlayer != null) {
+                    mediaPlayer.release();
+                }
+                if (libVLC != null) {
+                    libVLC.release();
+                }
+            }
+        }
+        EOF
+        
+        gradle wrapper --gradle-version 8.5
+        chmod +x gradlew
+
+    - name: Build REBAZ TV APP
+      run: |
+        ./gradlew assembleDebug --stacktrace
+        mv app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/rebaz.tv.apk
+
+    - name: Upload Finished REBAZ TV APP
+      uses: actions/upload-artifact@v4
+      with:
+        name: REBAZ-TV-APP
+        path: app/build/outputs/apk/debug/rebaz.tv.apk
