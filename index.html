@@ -1,1 +1,36 @@
+<!DOCTYPE html>
+<html lang="ku" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>REBAZ TV - Live Web Player</title>
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+  <style>
+    body { margin: 0; background: #131021; color: #fff; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; }
+    .player-container { width: 90%; max-width: 900px; background: #1B162E; border-radius: 12px; padding: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
+    video { width: 100%; border-radius: 8px; background: #000; }
+    .channel-title { font-size: 20px; font-weight: bold; color: #FFDE03; margin-top: 12px; }
+  </style>
+</head>
+<body>
+  <div class="player-container">
+    <video id="video" controls autoplay></video>
+    <div class="channel-title" id="title">REBAZ TV Live Stream</div>
+  </div>
 
+  <script>
+    const video = document.getElementById('video');
+    const streamUrl = 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8'; // لینکی ستریم لێرە دابنێ
+
+    if (Hls.isSupported()) {
+      const hls = new Hls();
+      hls.loadSource(streamUrl);
+      hls.attachMedia(video);
+      hls.on(Hls.Events.MANIFEST_PARSED, () => video.play());
+    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+      video.src = streamUrl;
+      video.addEventListener('loadedmetadata', () => video.play());
+    }
+  </script>
+</body>
+</html>
