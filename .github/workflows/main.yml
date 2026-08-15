@@ -52,6 +52,11 @@ jobs:
         elif [ -f "logo.jpg" ]; then cp logo.jpg app/src/main/res/drawable/ic_launcher.png
         else curl -L -o app/src/main/res/drawable/ic_launcher.png "https://upload.wikimedia.org/wikipedia/commons/c/cf/ExoPlayer_logo.png"; fi
         
+        # زیادکردنی کۆدی ناساندنی بانەری تەلەفزیۆن
+        if [ -f "tv_banner.png" ]; then cp tv_banner.png app/src/main/res/drawable/tv_banner.png
+        elif [ -f "tv_banner.png.png" ]; then cp tv_banner.png.png app/src/main/res/drawable/tv_banner.png
+        else cp app/src/main/res/drawable/splash_img.png app/src/main/res/drawable/tv_banner.png; fi
+
         echo "android.useAndroidX=true" > gradle.properties
         echo "android.enableJetifier=true" >> gradle.properties
         echo "include ':app'" > settings.gradle
@@ -171,11 +176,28 @@ jobs:
         <?xml version="1.0" encoding="utf-8"?>
         <manifest xmlns:android="http://schemas.android.com/apk/res/android">
             <uses-permission android:name="android.permission.INTERNET" />
-            <application android:allowBackup="true" android:label="REBAZ Smart TV" android:icon="@drawable/ic_launcher" android:theme="@style/Theme.AppCompat.Light.NoActionBar" android:usesCleartextTraffic="true" android:hardwareAccelerated="true">
-                <activity android:name=".MainActivity" android:exported="true" android:configChanges="orientation|screenSize|keyboardHidden|layoutDirection">
+            
+            <!-- ئەم دوو هێڵە پێویستن بۆ ئەوەی بزانرێت بۆ تیڤییە -->
+            <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
+            <uses-feature android:name="android.software.leanback" android:required="false" />
+
+            <application 
+                android:allowBackup="true" 
+                android:label="REBAZ TV" 
+                android:icon="@drawable/ic_launcher" 
+                android:banner="@drawable/tv_banner"
+                android:theme="@style/Theme.AppCompat.Light.NoActionBar" 
+                android:usesCleartextTraffic="true" 
+                android:hardwareAccelerated="true">
+                
+                <activity android:name=".MainActivity" 
+                          android:exported="true" 
+                          android:configChanges="orientation|screenSize|keyboardHidden|layoutDirection">
                     <intent-filter>
                         <action android:name="android.intent.action.MAIN" />
                         <category android:name="android.intent.category.LAUNCHER" />
+                        <!-- ئەم هێڵە وادەکات ئەپەکە قەت لە تیڤیەکە نەشارێتەوە -->
+                        <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
                     </intent-filter>
                 </activity>
             </application>
