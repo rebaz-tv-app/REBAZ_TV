@@ -1,10 +1,11 @@
-name: REBAZ SMART TV
+name: REBAZ SMART TV APK
 
 on:
   workflow_dispatch:
 
 jobs:
   build:
+    name: Build REBAZ SMART TV
     runs-on: ubuntu-latest
 
     steps:
@@ -12,22 +13,24 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup JDK 17
+      - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
 
-      - name: Setup Android SDK
+      - name: Setup Android
         uses: android-actions/setup-android@v3
 
-      - name: Accept Android Licenses
-        run: yes | sdkmanager --licenses || true
+      - name: Install Android SDK
+        run: |
+          yes | sdkmanager --licenses || true
+          sdkmanager "platforms;android-35" "build-tools;35.0.0"
 
-      - name: Create Android Project
+      - name: Create Gradle Project
         run: |
 
-          mkdir -p app/src/main/java/tv/rebaz/smart
+          mkdir -p app/src/main/java/com/rebaz/smarttv
           mkdir -p app/src/main/res/values
           mkdir -p app/src/main/assets
 
@@ -44,7 +47,6 @@ jobs:
 
           dependencyResolutionManagement {
               repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
-
               repositories {
                   google()
                   mavenCentral()
@@ -52,7 +54,6 @@ jobs:
           }
 
           rootProject.name = "REBAZ SMART TV"
-
           include(":app")
           EOF
 
@@ -63,9 +64,8 @@ jobs:
           EOF
 
           cat > gradle.properties <<'EOF'
-          org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8
           android.useAndroidX=true
-          android.nonTransitiveRClass=true
+          org.gradle.jvmargs=-Xmx2048m
           EOF
 
           cat > app/build.gradle <<'EOF'
@@ -74,11 +74,11 @@ jobs:
           }
 
           android {
-              namespace 'tv.rebaz.smart'
+              namespace 'com.rebaz.smarttv'
               compileSdk 35
 
               defaultConfig {
-                  applicationId 'tv.rebaz.smart'
+                  applicationId 'com.rebaz.smarttv'
                   minSdk 23
                   targetSdk 35
                   versionCode 1
@@ -88,7 +88,6 @@ jobs:
               buildTypes {
                   release {
                       minifyEnabled false
-                      shrinkResources false
                   }
               }
 
@@ -109,40 +108,50 @@ jobs:
           cat > app/src/main/res/values/styles.xml <<'EOF'
           <?xml version="1.0" encoding="utf-8"?>
           <resources>
-              <style name="AppTheme" parent="Theme.AppCompat.NoActionBar">
+
+              <style name="AppTheme"
+                  parent="Theme.AppCompat.NoActionBar">
+
+                  <item name="android:windowFullscreen">true</item>
                   <item name="android:fontFamily">sans</item>
                   <item name="android:colorAccent">#ffde03</item>
-                  <item name="android:statusBarColor">#0f0c1b</item>
-                  <item name="android:navigationBarColor">#0f0c1b</item>
-                  <item name="android:windowLightStatusBar">false</item>
-                  <item name="android:windowNoTitle">true</item>
+
               </style>
+
           </resources>
           EOF
 
           cat > app/src/main/AndroidManifest.xml <<'EOF'
           <?xml version="1.0" encoding="utf-8"?>
 
-          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+          <manifest
+              xmlns:android="http://schemas.android.com/apk/res/android">
 
-              <uses-permission android:name="android.permission.INTERNET" />
+              <uses-permission
+                  android:name="android.permission.INTERNET" />
 
               <application
-                  android:allowBackup="false"
-                  android:label="REBAZ SMART TV"
                   android:theme="@style/AppTheme"
-                  android:usesCleartextTraffic="true">
+                  android:label="REBAZ SMART TV"
+                  android:usesCleartextTraffic="true"
+                  android:allowBackup="false">
 
                   <activity
                       android:name=".MainActivity"
                       android:screenOrientation="landscape"
-                      android:configChanges="orientation|screenSize|keyboardHidden"
                       android:exported="true">
 
                       <intent-filter>
-                          <action android:name="android.intent.action.MAIN" />
-                          <category android:name="android.intent.category.LAUNCHER" />
-                          <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
+
+                          <action
+                              android:name="android.intent.action.MAIN" />
+
+                          <category
+                              android:name="android.intent.category.LAUNCHER" />
+
+                          <category
+                              android:name="android.intent.category.LEANBACK_LAUNCHER" />
+
                       </intent-filter>
 
                   </activity>
@@ -152,130 +161,50 @@ jobs:
           </manifest>
           EOF
 
-          cat > app/src/main/java/tv/rebaz/smart/MainActivity.java <<'EOF'
-          package tv.rebaz.smart;
+          cat > app/src/main/java/com/rebaz/smarttv/MainActivity.java <<'EOF'
+          package com.rebaz.smarttv;
 
           import android.app.Activity;
-          import android.graphics.Color;
           import android.os.Bundle;
-          import android.view.View;
-          import android.view.WindowManager;
-          import android.webkit.JavascriptInterface;
           import android.webkit.WebChromeClient;
           import android.webkit.WebSettings;
           import android.webkit.WebView;
           import android.webkit.WebViewClient;
-          import android.widget.FrameLayout;
-
-          import androidx.media3.common.MediaItem;
-          import androidx.media3.exoplayer.ExoPlayer;
-          import androidx.media3.ui.PlayerView;
 
           public class MainActivity extends Activity {
 
-              private ExoPlayer player;
-              private PlayerView playerView;
               private WebView webView;
 
               @Override
               protected void onCreate(Bundle savedInstanceState) {
                   super.onCreate(savedInstanceState);
 
-                  getWindow().setFlags(
-                      WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON,
-                      WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
-                  );
-
-                  FrameLayout root = new FrameLayout(this);
-
                   webView = new WebView(this);
 
-                  WebSettings settings = webView.getSettings();
+                  WebSettings settings =
+                      webView.getSettings();
+
                   settings.setJavaScriptEnabled(true);
                   settings.setDomStorageEnabled(true);
                   settings.setMediaPlaybackRequiresUserGesture(false);
 
-                  webView.setWebViewClient(new WebViewClient());
-                  webView.setWebChromeClient(new WebChromeClient());
+                  webView.setWebViewClient(
+                      new WebViewClient()
+                  );
 
-                  webView.addJavascriptInterface(
-                      new PlayerBridge(),
-                      "AndroidPlayer"
+                  webView.setWebChromeClient(
+                      new WebChromeClient()
                   );
 
                   webView.loadUrl(
                       "file:///android_asset/index.html"
                   );
 
-                  root.addView(
-                      webView,
-                      new FrameLayout.LayoutParams(-1, -1)
-                  );
-
-                  player = new ExoPlayer.Builder(this).build();
-
-                  playerView = new PlayerView(this);
-                  playerView.setPlayer(player);
-                  playerView.setUseController(true);
-                  playerView.setBackgroundColor(Color.BLACK);
-                  playerView.setVisibility(View.GONE);
-
-                  root.addView(
-                      playerView,
-                      new FrameLayout.LayoutParams(-1, -1)
-                  );
-
-                  setContentView(root);
-              }
-
-              public class PlayerBridge {
-
-                  @JavascriptInterface
-                  public void play(String url) {
-                      runOnUiThread(() -> {
-
-                          MediaItem item =
-                              MediaItem.fromUri(url);
-
-                          player.setMediaItem(item);
-                          player.prepare();
-                          player.play();
-
-                          playerView.setVisibility(View.VISIBLE);
-                      });
-                  }
-
-                  @JavascriptInterface
-                  public void stop() {
-                      runOnUiThread(() -> {
-                          player.stop();
-                          playerView.setVisibility(View.GONE);
-                      });
-                  }
-
-                  @JavascriptInterface
-                  public void fullscreen() {
-                      runOnUiThread(() -> {
-
-                          getWindow()
-                              .getDecorView()
-                              .setSystemUiVisibility(
-                                  View.SYSTEM_UI_FLAG_FULLSCREEN |
-                                  View.SYSTEM_UI_FLAG_HIDE_NAVIGATION |
-                                  View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-                              );
-
-                          playerView.setVisibility(View.VISIBLE);
-                      });
-                  }
+                  setContentView(webView);
               }
 
               @Override
               protected void onDestroy() {
-
-                  if (player != null) {
-                      player.release();
-                  }
 
                   if (webView != null) {
                       webView.destroy();
@@ -286,66 +215,24 @@ jobs:
           }
           EOF
 
-      - name: Connect HTML To ExoPlayer
+      - name: Download Gradle
         run: |
-
-          python3 - <<'PY'
-
-          path = "app/src/main/assets/index.html"
-
-          with open(path, "r", encoding="utf-8") as f:
-              html = f.read()
-
-          old = """if (Hls.isSupported()) {
-                  if (hls) hls.destroy();
-                  hls = new Hls();
-                  hls.loadSource(channel.url);
-                  hls.attachMedia(video);
-                  hls.on(Hls.Events.MANIFEST_PARSED, () => video.play());
-                } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-                  video.src = channel.url;
-                  video.play();
-                }"""
-
-          new = """if (window.AndroidPlayer) {
-                  AndroidPlayer.play(channel.url);
-                } else if (Hls.isSupported()) {
-                  if (hls) hls.destroy();
-                  hls = new Hls();
-                  hls.loadSource(channel.url);
-                  hls.attachMedia(video);
-                  hls.on(Hls.Events.MANIFEST_PARSED, () => video.play());
-                } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-                  video.src = channel.url;
-                  video.play();
-                }"""
-
-          if old in html:
-              html = html.replace(old, new)
-
-          with open(path, "w", encoding="utf-8") as f:
-              f.write(html)
-
-          PY
-
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '8.9'
+          wget -q https://services.gradle.org/distributions/gradle-8.9-bin.zip
+          unzip -q gradle-8.9-bin.zip
+          echo "$PWD/gradle-8.9/bin" >> $GITHUB_PATH
 
       - name: Build APK
-        run: gradle assembleRelease
+        run: |
+          gradle assembleRelease
 
       - name: Rename APK
         run: |
-
           mkdir -p output
-
           cp app/build/outputs/apk/release/app-release.apk \
-          "output/rebaz smart tv.apk"
+             "output/rebaz smart tv.apk"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: REBAZ-SMART-TV
+          name: rebaz-smart-tv
           path: "output/rebaz smart tv.apk"
