@@ -171,11 +171,38 @@
 
     function handleChannelSelection(channel, element) {
       if (activeChannelId === channel.id) {
-        videoWrapper.classList.add('fullscreen-mode');
+        enterFullScreen();
       } else {
         playChannel(channel, element);
       }
     }
+
+    function enterFullScreen() {
+      if (!videoWrapper.classList.contains('fullscreen-mode')) {
+        videoWrapper.classList.add('fullscreen-mode');
+        // زیادکردنی مێژوو بۆ ئەوەی دوگمەی گەڕانەوە ئەم دۆخە بگرێت و ئەپەکە نەداخات
+        history.pushState({ fullscreen: true }, '');
+      }
+    }
+
+    function exitFullScreen() {
+      if (videoWrapper.classList.contains('fullscreen-mode')) {
+        videoWrapper.classList.remove('fullscreen-mode');
+        const activeItem = channelListEl.querySelector('.channel-item.active');
+        if (activeItem) {
+          activeItem.focus();
+        }
+      }
+    }
+
+    // چاودێریکردنی دوگمەی گەڕانەوەی سیستمی (History Back / TV Remote Back)
+    window.addEventListener('popstate', (e) => {
+      if (videoWrapper.classList.contains('fullscreen-mode')) {
+        exitFullScreen();
+        // قەرەبووکردنەوەی مێژوو بۆ ئەوەی ئەپەکە لە کار نەوەستێت
+        history.pushState(null, '', window.location.href);
+      }
+    });
 
     function playChannel(channel, element) {
       activeChannelId = channel.id;
@@ -225,21 +252,13 @@
       }
     };
 
-    // ڕێگریکردن لە دەرچوون لە ئەپەکە و گەڕانەوە تەنیا بۆ سەر کەناڵەکان بە دوگمەی گەڕانەوە
+    // پاراستنی زیاتری کلیلی کیبۆرد و کۆنترۆڵ
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' || e.key === 'Backspace' || e.keyCode === 27 || e.keyCode === 8) {
         if (videoWrapper.classList.contains('fullscreen-mode')) {
           e.preventDefault();
           e.stopPropagation();
-          e.stopImmediatePropagation();
-          
-          videoWrapper.classList.remove('fullscreen-mode');
-          
-          const activeItem = channelListEl.querySelector('.channel-item.active');
-          if (activeItem) {
-            activeItem.focus();
-          }
-          return false;
+          exitFullScreen();
         }
       }
     }, true);
