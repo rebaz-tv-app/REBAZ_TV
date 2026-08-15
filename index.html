@@ -9,32 +9,26 @@
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; }
     body { background-color: #0f0c1b; color: #fff; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
     
-    /* Header Top Bar */
     .header { height: 50px; background: #18132b; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; border-bottom: 1px solid #2a2444; }
     .header-left { display: flex; align-items: center; gap: 15px; font-size: 20px; font-weight: bold; }
     .search-box { background: #251f3d; border-radius: 20px; padding: 5px 15px; display: flex; align-items: center; width: 300px; }
     .search-box input { background: transparent; border: none; color: #fff; width: 100%; outline: none; margin-left: 8px; }
 
-    /* Layout Container */
     .main-container { flex: 1; display: flex; overflow: hidden; }
 
-    /* Column 1: Categories */
     .sidebar-categories { width: 250px; background: #141024; border-right: 1px solid #2a2444; padding: 15px; }
     .cat-item { display: flex; justify-content: space-between; padding: 10px 12px; border: 1px solid #2a2444; margin-bottom: 8px; border-radius: 4px; cursor: pointer; color: #ccc; outline: none; }
     .cat-item.active, .cat-item:hover, .cat-item:focus { background: #251f3d; border-color: #ffde03; color: #ffde03; }
 
-    /* Column 2: Channel List */
     .channel-list { width: 300px; background: #18132b; border-right: 1px solid #2a2444; padding: 15px; overflow-y: auto; }
     .channel-item { display: flex; align-items: center; gap: 12px; padding: 12px; border: 1px solid #2a2444; margin-bottom: 10px; border-radius: 4px; cursor: pointer; background: #1f1938; outline: none; }
     .channel-item.active, .channel-item:hover, .channel-item:focus { border-color: #ffde03; background: #2b234d; }
     .channel-num { font-weight: bold; font-size: 16px; width: 20px; }
     .channel-icon { width: 24px; height: 16px; background: #fff; border-radius: 2px; }
 
-    /* Column 3: Video Player */
     .player-section { flex: 1; background: #0f0c1b; padding: 20px; display: flex; flex-direction: column; }
     .video-wrapper { width: 100%; background: #000; border-radius: 8px; overflow: hidden; aspect-ratio: 16/9; max-height: 65vh; position: relative; transition: all 0.3s ease; }
     
-    /* دۆخی فول سکرین بە CSS */
     .video-wrapper.fullscreen-mode {
       position: fixed !important;
       top: 0 !important;
@@ -105,9 +99,6 @@
     let activeChannelId = 1;
     let currentCategory = 'all';
     let recentlyViewed = [1];
-
-    // دروستکردنی خاڵی مێژوو لە سەرەتادا بۆ ڕێگریکردن لە داخستنی ئەپەکە
-    history.pushState({ page: 'main' }, '', window.location.href);
 
     function updateCounts() {
       document.getElementById('count-all').textContent = channels.length;
@@ -183,8 +174,6 @@
     function enterFullScreen() {
       if (!videoWrapper.classList.contains('fullscreen-mode')) {
         videoWrapper.classList.add('fullscreen-mode');
-        // زیادکردنی مێژوو بۆ ئەوەی دوگمەی گەڕانەوە ئەم دۆخە بگرێت
-        history.pushState({ fullscreen: true }, '', window.location.href);
       }
     }
 
@@ -198,14 +187,14 @@
       }
     }
 
-    // چاودێریکردنی دوگمەی گەڕانەوە (Back button) بۆ گەڕانەوە بۆ سەر کەناڵەکان
-    window.addEventListener('popstate', (e) => {
+    // پڕدی پەیوەندی بۆ ئەوەی ئەپەکە بتوانێت لە ئەندرۆیدەوە بانگیشتی بکات
+    window.exitFullScreenFromAndroid = function() {
       if (videoWrapper.classList.contains('fullscreen-mode')) {
         exitFullScreen();
-        // پاراستنی مێژوو بۆ ئەوەی ئەپەکە نەداخات
-        history.pushState({ page: 'main' }, '', window.location.href);
+        return true; // نیشانی دەدات کە فول سکرین هەڵوەشایەوە و ئەپەکە نەداخات
       }
-    });
+      return false; // ئەگەر لە فول سکرین نەبوو، ڕێگە بە داخستنی ئەپ بدە
+    };
 
     function playChannel(channel, element) {
       activeChannelId = channel.id;
