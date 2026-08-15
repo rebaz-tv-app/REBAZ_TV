@@ -82,6 +82,7 @@
     ];
 
     const video = document.getElementById('video');
+    const videoWrapper = document.getElementById('videoWrapper');
     const channelListEl = document.getElementById('channelList');
     const activeTitleEl = document.getElementById('activeTitle');
     const favBtn = document.getElementById('favBtn');
@@ -114,7 +115,7 @@
         return;
       }
 
-      filteredChannels.forEach((ch, index) => {
+      filteredChannels.forEach((ch) => {
         const item = document.createElement('div');
         item.className = `channel-item ${ch.id === activeChannelId ? 'active' : ''}`;
         item.tabIndex = 0;
@@ -137,7 +138,6 @@
       updateCounts();
     }
 
-    // بەڕێوەبردنی پۆلەکان
     document.querySelectorAll('.cat-item').forEach(catEl => {
       const selectCat = () => {
         document.querySelectorAll('.cat-item').forEach(el => el.classList.remove('active'));
@@ -189,7 +189,6 @@
       updateCounts();
     }
 
-    // گۆڕینی دۆخی فەیڤۆریت
     function toggleFavorite() {
       const channel = channels.find(c => c.id === activeChannelId);
       if (channel) {
@@ -212,13 +211,32 @@
     };
 
     function toggleFullScreen() {
-      const wrapper = document.getElementById('videoWrapper');
-      if (!document.fullscreenElement) {
-        if (wrapper.requestFullscreen) wrapper.requestFullscreen();
-        else if (wrapper.webkitRequestFullscreen) wrapper.webkitRequestFullscreen();
-        else if (video.requestFullscreen) video.requestFullscreen();
+      const isInFullscreen = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
+      
+      if (!isInFullscreen) {
+        if (videoWrapper.requestFullscreen) {
+          videoWrapper.requestFullscreen();
+        } else if (videoWrapper.webkitRequestFullscreen) {
+          videoWrapper.webkitRequestFullscreen();
+        } else if (videoWrapper.mozRequestFullScreen) {
+          videoWrapper.mozRequestFullScreen();
+        } else if (videoWrapper.msRequestFullscreen) {
+          videoWrapper.msRequestFullscreen();
+        } else if (video.requestFullscreen) {
+          video.requestFullscreen();
+        } else if (video.webkitEnterFullscreen) {
+          video.webkitEnterFullscreen();
+        }
       } else {
-        if (document.exitFullscreen) document.exitFullscreen();
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        } else if (document.webkitExitFullscreen) {
+          document.webkitExitFullscreen();
+        } else if (document.mozCancelFullScreen) {
+          document.mozCancelFullScreen();
+        } else if (document.msExitFullscreen) {
+          document.msExitFullscreen();
+        }
       }
     }
 
