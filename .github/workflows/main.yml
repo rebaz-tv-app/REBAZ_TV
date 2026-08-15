@@ -19,12 +19,15 @@ jobs:
         distribution: 'zulu'
         java-version: '17'
 
-    - name: Prepare Project
+    - name: Install Android SDK & Build
+      uses: android-actions/setup-android@v3
+
+    - name: Create Project Files
       run: |
         mkdir -p app/src/main/java/com/rebazsmart/tv
-        mkdir -p app/src/main/res/layout
-        
-        # Manifest
+        mkdir -p app/src/main/res/values
+
+        # AndroidManifest.xml
         cat << 'EOF' > app/src/main/AndroidManifest.xml
         <manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.rebazsmart.tv">
             <uses-permission android:name="android.permission.INTERNET" />
@@ -38,11 +41,19 @@ jobs:
             </application>
         </manifest>
         EOF
-        
-        # MainActivity
+
+        # Strings.xml
+        cat << 'EOF' > app/src/main/res/values/strings.xml
+        <resources>
+            <string name="app_name">REBAZ TV</string>
+        </resources>
+        EOF
+
+        # MainActivity.java (لێرەدا ڕاستەوخۆ دەچێتە سەر index.html)
         cat << 'EOF' > app/src/main/java/com/rebazsmart/tv/MainActivity.java
         package com.rebazsmart.tv;
         import android.os.Bundle;
+        import android.webkit.WebSettings;
         import android.webkit.WebView;
         import android.webkit.WebViewClient;
         import androidx.appcompat.app.AppCompatActivity;
@@ -52,27 +63,42 @@ jobs:
             protected void onCreate(Bundle savedInstanceState) {
                 super.onCreate(savedInstanceState);
                 WebView wv = new WebView(this);
-                wv.getSettings().setJavaScriptEnabled(true);
-                wv.getSettings().setDomStorageEnabled(true);
+                WebSettings ws = wv.getSettings();
+                ws.setJavaScriptEnabled(true);
+                ws.setDomStorageEnabled(true);
+                ws.setMediaPlaybackRequiresUserGesture(false);
                 wv.setWebViewClient(new WebViewClient());
-                wv.loadUrl("https://rebaz-tv-app.github.io/REBAZ_TV/smart.html");
+                wv.loadUrl("https://rebaz-tv-app.github.io/REBAZ_TV/");
                 setContentView(wv);
             }
         }
         EOF
 
-        # Build Config
+        # settings.gradle
         echo "include ':app'" > settings.gradle
-        echo "android.useAndroidX=true" > gradle.properties
-        
+
+        # build.gradle (Project level)
         cat << 'EOF' > build.gradle
-        plugins {
-            id 'com.android.application' version '8.2.0' apply false
+        buildscript {
+            repositories {
+                google()
+                mavenCentral()
+            }
+            dependencies {
+                classpath 'com.android.tools.build:gradle:8.1.2'
+            }
+        }
+        allprojects {
+            repositories {
+                google()
+                mavenCentral()
+            }
         }
         EOF
-        
+
+        # build.gradle (App level)
         cat << 'EOF' > app/build.gradle
-        plugins { id 'com.android.application' }
+        apply plugin: 'com.android.application'
         android {
             namespace 'com.rebazsmart.tv'
             compileSdk 34
@@ -88,18 +114,19 @@ jobs:
             implementation 'androidx.appcompat:appcompat:1.6.1'
         }
         EOF
-        
-        chmod +x gradlew || true
 
-    - name: Build APK
-      run: |
-        # بەکارهێنانی gradle wrapper ئەگەر هەبێت یان دابەزاندنی
-        if [ ! -f "gradlew" ]; then gradle wrapper; fi
-        ./gradlew assembleDebug
-        mv app/build/outputs/apk/debug/app-debug.apk rebaz_smart_tv.apk
+        # gradle.properties
+        echo "android.useAndroidX=true" > gradle.properties
+
+        # Gradle Wrapper initialization
+        gradle wrapper
+        chmod +x gradlew
+
+    - name: Build with Gradle
+      run: ./gradlew assembleDebug
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
         name: rebaz_smart_tv
-        path: rebaz_smart_tv.apk
+        path: app/build/outputs/apk/debug/app-debug.apk
