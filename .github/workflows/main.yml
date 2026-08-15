@@ -1,238 +1,70 @@
-name: REBAZ SMART TV APK
+name: Build REBAZ TV Smart App
 
 on:
+  push:
+    branches: [ "main" ]
   workflow_dispatch:
 
 jobs:
   build:
-    name: Build REBAZ SMART TV
     runs-on: ubuntu-latest
-
     steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
 
-      - name: Checkout
-        uses: actions/checkout@v4
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'zulu'
 
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
+    - name: Build APK
+      run: |
+        mkdir -p app/src/main/java/com/rebaz/tvsmart
+        mkdir -p app/src/main/res/layout
+        mkdir -p app/src/main/AndroidManifest.xml
+        
+        # دروستکردنی فایلی MainActivity.java کە WebView Load دەکات
+        cat << 'EOF' > app/src/main/java/com/rebaz/tvsmart/MainActivity.java
+        package com.rebaz.tvsmart;
+        import android.os.Bundle;
+        import android.webkit.WebSettings;
+        import android.webkit.WebView;
+        import android.webkit.WebViewClient;
+        import androidx.appcompat.app.AppCompatActivity;
 
-      - name: Setup Android
-        uses: android-actions/setup-android@v3
+        public class MainActivity extends AppCompatActivity {
+            @Override
+            protected void onCreate(Bundle savedInstanceState) {
+                super.onCreate(savedInstanceState);
+                WebView wv = new WebView(this);
+                setContentView(wv);
+                WebSettings ws = wv.getSettings();
+                ws.setJavaScriptEnabled(true);
+                ws.setDomStorageEnabled(true);
+                ws.setMediaPlaybackRequiresUserGesture(false);
+                wv.setWebViewClient(new WebViewClient());
+                // لێرەدا لینکی فایلی smart.htmlـەکەت دابنێ
+                wv.loadUrl("https://rebaz-tv-app.github.io/REBAZ_TV/smart.html");
+            }
+        }
+        EOF
 
-      - name: Install Android SDK
-        run: |
-          yes | sdkmanager --licenses || true
-          sdkmanager "platforms;android-35" "build-tools;35.0.0"
-
-      - name: Create Gradle Project
-        run: |
-
-          mkdir -p app/src/main/java/com/rebaz/smarttv
-          mkdir -p app/src/main/res/values
-          mkdir -p app/src/main/assets
-
-          cp index.html app/src/main/assets/index.html
-
-          cat > settings.gradle <<'EOF'
-          pluginManagement {
-              repositories {
-                  google()
-                  mavenCentral()
-                  gradlePluginPortal()
-              }
-          }
-
-          dependencyResolutionManagement {
-              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
-              repositories {
-                  google()
-                  mavenCentral()
-              }
-          }
-
-          rootProject.name = "REBAZ SMART TV"
-          include(":app")
-          EOF
-
-          cat > build.gradle <<'EOF'
-          plugins {
-              id 'com.android.application' version '8.7.3' apply false
-          }
-          EOF
-
-          cat > gradle.properties <<'EOF'
-          android.useAndroidX=true
-          org.gradle.jvmargs=-Xmx2048m
-          EOF
-
-          cat > app/build.gradle <<'EOF'
-          plugins {
-              id 'com.android.application'
-          }
-
-          android {
-              namespace 'com.rebaz.smarttv'
-              compileSdk 35
-
-              defaultConfig {
-                  applicationId 'com.rebaz.smarttv'
-                  minSdk 23
-                  targetSdk 35
-                  versionCode 1
-                  versionName '1.0'
-              }
-
-              buildTypes {
-                  release {
-                      minifyEnabled false
-                  }
-              }
-
-              compileOptions {
-                  sourceCompatibility JavaVersion.VERSION_17
-                  targetCompatibility JavaVersion.VERSION_17
-              }
-          }
-
-          dependencies {
-              implementation 'androidx.appcompat:appcompat:1.7.0'
-              implementation 'androidx.media3:media3-exoplayer:1.6.1'
-              implementation 'androidx.media3:media3-exoplayer-hls:1.6.1'
-              implementation 'androidx.media3:media3-ui:1.6.1'
-          }
-          EOF
-
-          cat > app/src/main/res/values/styles.xml <<'EOF'
-          <?xml version="1.0" encoding="utf-8"?>
-          <resources>
-
-              <style name="AppTheme"
-                  parent="Theme.AppCompat.NoActionBar">
-
-                  <item name="android:windowFullscreen">true</item>
-                  <item name="android:fontFamily">sans</item>
-                  <item name="android:colorAccent">#ffde03</item>
-
-              </style>
-
-          </resources>
-          EOF
-
-          cat > app/src/main/AndroidManifest.xml <<'EOF'
-          <?xml version="1.0" encoding="utf-8"?>
-
-          <manifest
-              xmlns:android="http://schemas.android.com/apk/res/android">
-
-              <uses-permission
-                  android:name="android.permission.INTERNET" />
-
-              <application
-                  android:theme="@style/AppTheme"
-                  android:label="REBAZ SMART TV"
-                  android:usesCleartextTraffic="true"
-                  android:allowBackup="false">
-
-                  <activity
-                      android:name=".MainActivity"
-                      android:screenOrientation="landscape"
-                      android:exported="true">
-
-                      <intent-filter>
-
-                          <action
-                              android:name="android.intent.action.MAIN" />
-
-                          <category
-                              android:name="android.intent.category.LAUNCHER" />
-
-                          <category
-                              android:name="android.intent.category.LEANBACK_LAUNCHER" />
-
-                      </intent-filter>
-
-                  </activity>
-
-              </application>
-
-          </manifest>
-          EOF
-
-          cat > app/src/main/java/com/rebaz/smarttv/MainActivity.java <<'EOF'
-          package com.rebaz.smarttv;
-
-          import android.app.Activity;
-          import android.os.Bundle;
-          import android.webkit.WebChromeClient;
-          import android.webkit.WebSettings;
-          import android.webkit.WebView;
-          import android.webkit.WebViewClient;
-
-          public class MainActivity extends Activity {
-
-              private WebView webView;
-
-              @Override
-              protected void onCreate(Bundle savedInstanceState) {
-                  super.onCreate(savedInstanceState);
-
-                  webView = new WebView(this);
-
-                  WebSettings settings =
-                      webView.getSettings();
-
-                  settings.setJavaScriptEnabled(true);
-                  settings.setDomStorageEnabled(true);
-                  settings.setMediaPlaybackRequiresUserGesture(false);
-
-                  webView.setWebViewClient(
-                      new WebViewClient()
-                  );
-
-                  webView.setWebChromeClient(
-                      new WebChromeClient()
-                  );
-
-                  webView.loadUrl(
-                      "file:///android_asset/index.html"
-                  );
-
-                  setContentView(webView);
-              }
-
-              @Override
-              protected void onDestroy() {
-
-                  if (webView != null) {
-                      webView.destroy();
-                  }
-
-                  super.onDestroy();
-              }
-          }
-          EOF
-
-      - name: Download Gradle
-        run: |
-          wget -q https://services.gradle.org/distributions/gradle-8.9-bin.zip
-          unzip -q gradle-8.9-bin.zip
-          echo "$PWD/gradle-8.9/bin" >> $GITHUB_PATH
-
-      - name: Build APK
-        run: |
-          gradle assembleRelease
-
-      - name: Rename APK
-        run: |
-          mkdir -p output
-          cp app/build/outputs/apk/release/app-release.apk \
-             "output/rebaz smart tv.apk"
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: rebaz-smart-tv
-          path: "output/rebaz smart tv.apk"
+        # دروستکردنی AndroidManifest.xml
+        cat << 'EOF' > app/src/main/AndroidManifest.xml
+        <manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.rebaz.tvsmart">
+            <uses-permission android:name="android.permission.INTERNET" />
+            <application android:allowBackup="true" android:label="REBAZ TV Smart" android:usesCleartextTraffic="true">
+                <activity android:name=".MainActivity" android:exported="true">
+                    <intent-filter>
+                        <action android:name="android.intent.action.MAIN" />
+                        <category android:name="android.intent.category.LAUNCHER" />
+                    </intent-filter>
+                </activity>
+            </application>
+        </manifest>
+        EOF
+        
+        # لێرەدا دەبێت build.gradle و فایلەکانی تر دابنێیت (وەک پێشتر)
+        # پاشان ./gradlew assembleDebug
+        # ئەم بەشە تەنها بۆ نموونەیە، بۆیە دڵنیابە لە تەواوکردنی فایلە پێویستەکانی تر.
