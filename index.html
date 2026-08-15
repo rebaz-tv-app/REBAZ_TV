@@ -171,7 +171,6 @@
 
     function handleChannelSelection(channel, element) {
       if (activeChannelId === channel.id) {
-        // تەنیا دەبێتە فول سکرین و بە ئۆکە دەرناچێت
         videoWrapper.classList.add('fullscreen-mode');
       } else {
         playChannel(channel, element);
@@ -226,21 +225,24 @@
       }
     };
 
-    // دەرچوون لە فول سکرین تەنیا بە دوگمەی گەڕانەوە (Back / Escape / Backspace)
+    // ڕێگریکردن لە دەرچوون لە ئەپەکە و گەڕانەوە تەنیا بۆ سەر کەناڵەکان بە دوگمەی گەڕانەوە
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' || e.key === 'Backspace' || e.keyCode === 27 || e.keyCode === 8) {
         if (videoWrapper.classList.contains('fullscreen-mode')) {
           e.preventDefault();
+          e.stopPropagation();
+          e.stopImmediatePropagation();
+          
           videoWrapper.classList.remove('fullscreen-mode');
           
-          // گەڕاندنەوەی فۆکەس بۆ سەر کەناڵە کارا لە لیستەکەدا
           const activeItem = channelListEl.querySelector('.channel-item.active');
           if (activeItem) {
             activeItem.focus();
           }
+          return false;
         }
       }
-    });
+    }, true);
 
     renderChannels();
     playChannel(channels[0], document.querySelector('.channel-item'));
