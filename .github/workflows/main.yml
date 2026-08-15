@@ -19,10 +19,10 @@ jobs:
         distribution: 'zulu'
         java-version: '17'
 
-    - name: Install Android SDK & Build
+    - name: Setup Android Environment
       uses: android-actions/setup-android@v3
 
-    - name: Create Project Files
+    - name: Generate Project Files
       run: |
         mkdir -p app/src/main/java/com/rebazsmart/tv
         mkdir -p app/src/main/res/values
@@ -42,14 +42,14 @@ jobs:
         </manifest>
         EOF
 
-        # Strings.xml
+        # strings.xml
         cat << 'EOF' > app/src/main/res/values/strings.xml
         <resources>
             <string name="app_name">REBAZ TV</string>
         </resources>
         EOF
 
-        # MainActivity.java (لێرەدا ڕاستەوخۆ دەچێتە سەر index.html)
+        # MainActivity.java
         cat << 'EOF' > app/src/main/java/com/rebazsmart/tv/MainActivity.java
         package com.rebazsmart.tv;
         import android.os.Bundle;
@@ -77,7 +77,7 @@ jobs:
         # settings.gradle
         echo "include ':app'" > settings.gradle
 
-        # build.gradle (Project level)
+        # root build.gradle
         cat << 'EOF' > build.gradle
         buildscript {
             repositories {
@@ -96,7 +96,7 @@ jobs:
         }
         EOF
 
-        # build.gradle (App level)
+        # app/build.gradle
         cat << 'EOF' > app/build.gradle
         apply plugin: 'com.android.application'
         android {
@@ -118,14 +118,15 @@ jobs:
         # gradle.properties
         echo "android.useAndroidX=true" > gradle.properties
 
-        # Gradle Wrapper initialization
-        gradle wrapper
-        chmod +x gradlew
+    - name: Build APK with Gradle
+      env:
+        ANDROID_HOME: ${{ steps.setup-android.outputs.android-home }}
+      run: |
+        sdkmanager "platforms;android-34" "build-tools;34.0.0"
+        yes | sdkmanager --licenses || true
+        gradle assembleDebug
 
-    - name: Build with Gradle
-      run: ./gradlew assembleDebug
-
-    - name: Upload APK
+    - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
       with:
         name: rebaz_smart_tv
