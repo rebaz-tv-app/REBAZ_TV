@@ -100,6 +100,9 @@
     let currentCategory = 'all';
     let recentlyViewed = [1];
 
+    // دروستکردنی خاڵی مێژوو بۆ کۆنتڕۆڵکردنی دوگمەی گەڕانەوە لە WebView
+    history.pushState({ page: 'main' }, '', window.location.href);
+
     function updateCounts() {
       document.getElementById('count-all').textContent = channels.length;
       document.getElementById('count-recent').textContent = recentlyViewed.length;
@@ -174,6 +177,8 @@
     function enterFullScreen() {
       if (!videoWrapper.classList.contains('fullscreen-mode')) {
         videoWrapper.classList.add('fullscreen-mode');
+        // زیادکردنی مێژوو بۆ ئەوەی دوگمەی گەڕانەوە ئەم دۆخە بگرێت و ئەپەکە نەداخات
+        history.pushState({ fullscreen: true }, '', window.location.href);
       }
     }
 
@@ -187,14 +192,23 @@
       }
     }
 
-    // پڕدی پەیوەندی بۆ ئەوەی ئەپەکە بتوانێت لە ئەندرۆیدەوە بانگیشتی بکات
-    window.exitFullScreenFromAndroid = function() {
+    // گرتنی فەرمانی دوگمەی گەڕانەوە (Back button) لەڕێگەی History API و KeyDownەوە
+    window.addEventListener('popstate', (e) => {
       if (videoWrapper.classList.contains('fullscreen-mode')) {
         exitFullScreen();
-        return true; // نیشانی دەدات کە فول سکرین هەڵوەشایەوە و ئەپەکە نەداخات
+        history.pushState({ page: 'main' }, '', window.location.href);
       }
-      return false; // ئەگەر لە فول سکرین نەبوو، ڕێگە بە داخستنی ئەپ بدە
-    };
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' || e.key === 'Backspace' || e.keyCode === 27 || e.keyCode === 8 || e.keyCode === 4) {
+        if (videoWrapper.classList.contains('fullscreen-mode')) {
+          e.preventDefault();
+          exitFullScreen();
+          history.pushState({ page: 'main' }, '', window.location.href);
+        }
+      }
+    });
 
     function playChannel(channel, element) {
       activeChannelId = channel.id;
