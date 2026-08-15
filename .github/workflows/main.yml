@@ -281,7 +281,7 @@ jobs:
 
                 wv.setWebViewClient(new WebViewClient());
                 wv.setWebChromeClient(new WebChromeClient());
-                wv.loadUrl("https://rebaz92.github.io/REBAZ_TV/index.html"); 
+                wv.loadUrl("https://rebaz92.github.io/REBAZ_TV/smart.html"); 
             }
 
             private void stopAndHidePlayer() {
