@@ -19,16 +19,16 @@ jobs:
         distribution: 'zulu'
         java-version: '17'
 
-    - name: Prepare Project Structure
+    - name: Prepare Project
       run: |
         mkdir -p app/src/main/java/com/rebazsmart/tv
         mkdir -p app/src/main/res/layout
         
-        # دروستکردنی فایلی Manifest
+        # Manifest
         cat << 'EOF' > app/src/main/AndroidManifest.xml
         <manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.rebazsmart.tv">
             <uses-permission android:name="android.permission.INTERNET" />
-            <application android:allowBackup="true" android:label="REBAZ TV" android:supportsRtl="true" android:usesCleartextTraffic="true">
+            <application android:allowBackup="true" android:label="REBAZ TV" android:usesCleartextTraffic="true">
                 <activity android:name=".MainActivity" android:exported="true">
                     <intent-filter>
                         <action android:name="android.intent.action.MAIN" />
@@ -39,11 +39,10 @@ jobs:
         </manifest>
         EOF
         
-        # دروستکردنی MainActivity
+        # MainActivity
         cat << 'EOF' > app/src/main/java/com/rebazsmart/tv/MainActivity.java
         package com.rebazsmart.tv;
         import android.os.Bundle;
-        import android.webkit.WebSettings;
         import android.webkit.WebView;
         import android.webkit.WebViewClient;
         import androidx.appcompat.app.AppCompatActivity;
@@ -53,27 +52,25 @@ jobs:
             protected void onCreate(Bundle savedInstanceState) {
                 super.onCreate(savedInstanceState);
                 WebView wv = new WebView(this);
-                setContentView(wv);
-                WebSettings ws = wv.getSettings();
-                ws.setJavaScriptEnabled(true);
-                ws.setDomStorageEnabled(true);
-                ws.setMediaPlaybackRequiresUserGesture(false);
+                wv.getSettings().setJavaScriptEnabled(true);
+                wv.getSettings().setDomStorageEnabled(true);
                 wv.setWebViewClient(new WebViewClient());
                 wv.loadUrl("https://rebaz-tv-app.github.io/REBAZ_TV/smart.html");
+                setContentView(wv);
             }
         }
         EOF
 
-        # دروستکردنی build.gradle (Root)
+        # Build Config
+        echo "include ':app'" > settings.gradle
+        echo "android.useAndroidX=true" > gradle.properties
+        
         cat << 'EOF' > build.gradle
-        buildscript {
-            repositories { google(); mavenCentral() }
-            dependencies { classpath 'com.android.tools.build:gradle:8.2.0' }
+        plugins {
+            id 'com.android.application' version '8.2.0' apply false
         }
-        allprojects { repositories { google(); mavenCentral() } }
         EOF
         
-        # دروستکردنی app/build.gradle
         cat << 'EOF' > app/build.gradle
         plugins { id 'com.android.application' }
         android {
@@ -92,15 +89,12 @@ jobs:
         }
         EOF
         
-        # دروستکردنی settings.gradle
-        echo "include ':app'" > settings.gradle
-        
-        # دروستکردنی فایلی wrapper
-        gradle wrapper --gradle-version 8.5
-        chmod +x gradlew
+        chmod +x gradlew || true
 
     - name: Build APK
       run: |
+        # بەکارهێنانی gradle wrapper ئەگەر هەبێت یان دابەزاندنی
+        if [ ! -f "gradlew" ]; then gradle wrapper; fi
         ./gradlew assembleDebug
         mv app/build/outputs/apk/debug/app-debug.apk rebaz_smart_tv.apk
 
