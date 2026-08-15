@@ -1,4 +1,4 @@
-name: Build REBAZ TV APK
+name: Build REBAZ android TV APK
 
 on:
   push:
@@ -259,5 +259,5 @@ jobs:
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
-        name: REBAZ-TV-APP
-        path: app/build/outputs/apk/debug/REBAZ_TV_APP.apk
+        name: REBAZ-androi-TV-APP
+        path: app/build/outputs/apk/debug/REBAZ_android_TV_APP.apk
