@@ -64,7 +64,16 @@ jobs:
         }
         EOF
 
-        # دروستکردنی build.gradle
+        # دروستکردنی build.gradle (Root)
+        cat << 'EOF' > build.gradle
+        buildscript {
+            repositories { google(); mavenCentral() }
+            dependencies { classpath 'com.android.tools.build:gradle:8.2.0' }
+        }
+        allprojects { repositories { google(); mavenCentral() } }
+        EOF
+        
+        # دروستکردنی app/build.gradle
         cat << 'EOF' > app/build.gradle
         plugins { id 'com.android.application' }
         android {
@@ -86,16 +95,17 @@ jobs:
         # دروستکردنی settings.gradle
         echo "include ':app'" > settings.gradle
         
+        # دروستکردنی فایلی wrapper
         gradle wrapper --gradle-version 8.5
         chmod +x gradlew
 
     - name: Build APK
       run: |
         ./gradlew assembleDebug
-        mv app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/rebaz_smart_tv.apk
+        mv app/build/outputs/apk/debug/app-debug.apk rebaz_smart_tv.apk
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
         name: rebaz_smart_tv
-        path: app/build/outputs/apk/debug/rebaz_smart_tv.apk
+        path: rebaz_smart_tv.apk
