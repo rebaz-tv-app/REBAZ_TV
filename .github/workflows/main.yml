@@ -1,40 +1,483 @@
-name: Build REBAZ SMART TV
+name: REBAZ SMART TV
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Project
+
+      - name: Download Repository
         uses: actions/checkout@v4
 
-      - name: Setup JDK
+      - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
 
-      - name: Setup Android SDK
+      - name: Setup Android
         uses: android-actions/setup-android@v3
 
       - name: Accept Android Licenses
         run: yes | sdkmanager --licenses || true
 
-      - name: Build REBAZ SMART TV APK
+      - name: Create Android Project
+        shell: bash
         run: |
-          chmod +x ./gradlew
-          ./gradlew assembleRelease
+
+          mkdir -p app/src/main/java/tv/rebaz/smart
+          mkdir -p app/src/main/res/values
+          mkdir -p app/src/main/assets
+
+          cp index.html app/src/main/assets/index.html
+
+          cat > settings.gradle <<'EOF'
+          pluginManagement {
+              repositories {
+                  google()
+                  mavenCentral()
+                  gradlePluginPortal()
+              }
+          }
+
+          dependencyResolutionManagement {
+              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+          }
+
+          rootProject.name = "REBAZ SMART TV"
+
+          include(":app")
+          EOF
+
+          cat > build.gradle <<'EOF'
+          plugins {
+              id 'com.android.application' version '8.7.3' apply false
+          }
+          EOF
+
+          cat > gradle.properties <<'EOF'
+          org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8
+          android.useAndroidX=true
+          android.nonTransitiveRClass=true
+          EOF
+
+          cat > app/build.gradle <<'EOF'
+          plugins {
+              id 'com.android.application'
+          }
+
+          android {
+              namespace 'tv.rebaz.smart'
+              compileSdk 35
+
+              defaultConfig {
+                  applicationId 'tv.rebaz.smart'
+                  minSdk 23
+                  targetSdk 35
+                  versionCode 1
+                  versionName '1.0'
+              }
+
+              buildTypes {
+                  release {
+                      minifyEnabled false
+                      shrinkResources false
+                  }
+              }
+
+              compileOptions {
+                  sourceCompatibility JavaVersion.VERSION_17
+                  targetCompatibility JavaVersion.VERSION_17
+              }
+          }
+
+          dependencies {
+
+              implementation 'androidx.appcompat:appcompat:1.7.0'
+
+              implementation 'androidx.media3:media3-exoplayer:1.6.1'
+
+              implementation 'androidx.media3:media3-exoplayer-hls:1.6.1'
+
+              implementation 'androidx.media3:media3-ui:1.6.1'
+          }
+          EOF
+
+          cat > app/src/main/res/values/styles.xml <<'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <resources>
+
+              <style name="AppTheme"
+                  parent="Theme.AppCompat.NoActionBar">
+
+                  <item name="android:fontFamily">sans</item>
+                  <item name="android:windowActionModeOverlay">true</item>
+                  <item name="android:colorAccent">#ffde03</item>
+                  <item name="android:windowLightStatusBar">false</item>
+                  <item name="android:statusBarColor">#0f0c1b</item>
+                  <item name="android:navigationBarColor">#0f0c1b</item>
+                  <item name="android:windowNoTitle">true</item>
+
+              </style>
+
+          </resources>
+          EOF
+
+          cat > app/src/main/AndroidManifest.xml <<'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+              <uses-permission android:name="android.permission.INTERNET" />
+
+              <application
+                  android:allowBackup="false"
+                  android:label="REBAZ SMART TV"
+                  android:theme="@style/AppTheme"
+                  android:usesCleartextTraffic="true"
+                  android:supportsRtl="true">
+
+                  <activity
+                      android:name=".MainActivity"
+                      android:screenOrientation="landscape"
+                      android:configChanges="orientation|screenSize|keyboardHidden"
+                      android:exported="true">
+
+                      <intent-filter>
+
+                          <action android:name="android.intent.action.MAIN" />
+
+                          <category android:name="android.intent.category.LAUNCHER" />
+
+                          <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
+
+                      </intent-filter>
+
+                  </activity>
+
+              </application>
+
+          </manifest>
+          EOF
+
+          cat > app/src/main/java/tv/rebaz/smart/MainActivity.java <<'EOF'
+          package tv.rebaz.smart;
+
+          import android.annotation.SuppressLint;
+          import android.app.Activity;
+          import android.graphics.Color;
+          import android.os.Bundle;
+          import android.view.View;
+          import android.view.Window;
+          import android.webkit.JavascriptInterface;
+          import android.webkit.WebChromeClient;
+          import android.webkit.WebSettings;
+          import android.webkit.WebView;
+          import android.webkit.WebViewClient;
+          import android.widget.FrameLayout;
+
+          import androidx.annotation.Nullable;
+          import androidx.media3.common.MediaItem;
+          import androidx.media3.common.PlaybackException;
+          import androidx.media3.common.Player;
+          import androidx.media3.exoplayer.ExoPlayer;
+          import androidx.media3.ui.PlayerView;
+
+          public class MainActivity extends Activity {
+
+              private WebView webView;
+              private ExoPlayer player;
+              private PlayerView playerView;
+
+              @SuppressLint("SetJavaScriptEnabled")
+              @Override
+              protected void onCreate(@Nullable Bundle savedInstanceState) {
+
+                  super.onCreate(savedInstanceState);
+
+                  getWindow().setFlags(
+                      Window.FLAG_KEEP_SCREEN_ON,
+                      Window.FLAG_KEEP_SCREEN_ON
+                  );
+
+                  getWindow().setStatusBarColor(
+                      Color.rgb(15,12,27)
+                  );
+
+                  getWindow().setNavigationBarColor(
+                      Color.rgb(15,12,27)
+                  );
+
+                  FrameLayout root =
+                      new FrameLayout(this);
+
+                  webView =
+                      new WebView(this);
+
+                  WebSettings settings =
+                      webView.getSettings();
+
+                  settings.setJavaScriptEnabled(true);
+                  settings.setDomStorageEnabled(true);
+                  settings.setMediaPlaybackRequiresUserGesture(false);
+                  settings.setAllowFileAccess(true);
+                  settings.setAllowContentAccess(true);
+
+                  webView.setWebChromeClient(
+                      new WebChromeClient()
+                  );
+
+                  webView.setWebViewClient(
+                      new WebViewClient()
+                  );
+
+                  webView.addJavascriptInterface(
+                      new PlayerBridge(),
+                      "AndroidPlayer"
+                  );
+
+                  webView.loadUrl(
+                      "file:///android_asset/index.html"
+                  );
+
+                  root.addView(
+                      webView,
+                      new FrameLayout.LayoutParams(
+                          -1,
+                          -1
+                      )
+                  );
+
+                  player =
+                      new ExoPlayer.Builder(this)
+                          .build();
+
+                  playerView =
+                      new PlayerView(this);
+
+                  playerView.setPlayer(player);
+
+                  playerView.setUseController(true);
+
+                  playerView.setBackgroundColor(
+                      Color.BLACK
+                  );
+
+                  playerView.setVisibility(
+                      View.GONE
+                  );
+
+                  root.addView(
+                      playerView,
+                      new FrameLayout.LayoutParams(
+                          -1,
+                          -1
+                      )
+                  );
+
+                  player.addListener(
+                      new Player.Listener() {
+
+                          @Override
+                          public void onPlaybackStateChanged(
+                              int state
+                          ) {
+
+                              if (
+                                  state ==
+                                  Player.STATE_READY
+                              ) {
+
+                                  player.play();
+                              }
+                          }
+
+                          @Override
+                          public void onPlayerError(
+                              PlaybackException error
+                          ) {
+
+                              webView.evaluateJavascript(
+                                  "window.nativePlayerError && window.nativePlayerError();",
+                                  null
+                              );
+                          }
+                      }
+                  );
+
+                  setContentView(root);
+              }
+
+              public class PlayerBridge {
+
+                  @JavascriptInterface
+                  public void play(
+                      String url
+                  ) {
+
+                      runOnUiThread(() -> {
+
+                          try {
+
+                              MediaItem item =
+                                  MediaItem.fromUri(url);
+
+                              player.setMediaItem(item);
+
+                              player.prepare();
+
+                              player.play();
+
+                              playerView.setVisibility(
+                                  View.VISIBLE
+                              );
+
+                          } catch (Exception e) {
+
+                              e.printStackTrace();
+                          }
+                      });
+                  }
+
+                  @JavascriptInterface
+                  public void stop() {
+
+                      runOnUiThread(() -> {
+
+                          player.stop();
+
+                          playerView.setVisibility(
+                              View.GONE
+                          );
+                      });
+                  }
+
+                  @JavascriptInterface
+                  public void fullscreen() {
+
+                      runOnUiThread(() -> {
+
+                          playerView.setVisibility(
+                              View.VISIBLE
+                          );
+
+                          getWindow()
+                              .getDecorView()
+                              .setSystemUiVisibility(
+                                  View.SYSTEM_UI_FLAG_FULLSCREEN
+                                  |
+                                  View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                                  |
+                                  View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                              );
+                      });
+                  }
+              }
+
+              @Override
+              public void onBackPressed() {
+
+                  if (playerView.getVisibility()
+                      == View.VISIBLE) {
+
+                      playerView.setVisibility(
+                          View.GONE
+                      );
+
+                      getWindow()
+                          .getDecorView()
+                          .setSystemUiVisibility(0);
+
+                      return;
+                  }
+
+                  super.onBackPressed();
+              }
+
+              @Override
+              protected void onDestroy() {
+
+                  if (player != null) {
+                      player.release();
+                      player = null;
+                  }
+
+                  if (webView != null) {
+                      webView.destroy();
+                  }
+
+                  super.onDestroy();
+              }
+          }
+          EOF
+
+      - name: Connect HTML To ExoPlayer
+        shell: bash
+        run: |
+
+          python3 - <<'PY'
+
+          path = "app/src/main/assets/index.html"
+
+          with open(path, "r", encoding="utf-8") as f:
+              html = f.read()
+
+          old = """if (Hls.isSupported()) {
+                  if (hls) hls.destroy();
+                  hls = new Hls();
+                  hls.loadSource(channel.url);
+                  hls.attachMedia(video);
+                  hls.on(Hls.Events.MANIFEST_PARSED, () => video.play());
+                } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                  video.src = channel.url;
+                  video.play();
+                }"""
+
+          new = """if (window.AndroidPlayer) {
+                  AndroidPlayer.play(channel.url);
+                } else if (Hls.isSupported()) {
+                  if (hls) hls.destroy();
+                  hls = new Hls();
+                  hls.loadSource(channel.url);
+                  hls.attachMedia(video);
+                  hls.on(Hls.Events.MANIFEST_PARSED, () => video.play());
+                } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                  video.src = channel.url;
+                  video.play();
+                }"""
+
+          if old in html:
+              html = html.replace(old, new)
+
+          with open(path, "w", encoding="utf-8") as f:
+              f.write(html)
+
+          PY
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Build APK
+        run: gradle assembleRelease
 
       - name: Rename APK
         run: |
+
           mkdir -p output
-          cp app/build/outputs/apk/release/*.apk "output/rebaz smart tv.apk"
+
+          cp \
+          app/build/outputs/apk/release/app-release.apk \
+          "output/rebaz smart tv.apk"
 
       - name: Upload REBAZ SMART TV
         uses: actions/upload-artifact@v4
