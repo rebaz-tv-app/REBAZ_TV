@@ -32,6 +32,18 @@ jobs:
           cordova create rebaz_app com.rebaztv.live "REBAZ TV"
           rm -rf rebaz_app/www/*
           cp index.html rebaz_app/www/
+          
+          # ئەم بەشە نوێیەیە بۆ ئەوەی ڕێگە لە کاش بگرێت
+          cat << 'EOF' > rebaz_app/config.xml
+          <?xml version='1.0' encoding='utf-8'?>
+          <widget id="com.rebaztv.live" version="1.0.0" xmlns="http://www.w3.org/ns/widgets">
+              <name>REBAZ TV</name>
+              <access origin="*" />
+              <allow-intent href="*" />
+              <preference name="ClearCacheMode" value="all" />
+              <preference name="AppendUserAgent" value="RebazTVApp" />
+          </widget>
+          EOF
 
       - name: Build APK
         working-directory: ./rebaz_app
