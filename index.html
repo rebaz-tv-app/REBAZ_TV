@@ -53,11 +53,11 @@
 
   <div class="main-container">
     
-    <div class="sidebar-categories">
-      <div class="cat-item active" tabindex="0"><span>All</span><span>3</span></div>
-      <div class="cat-item" tabindex="0"><span>Recently Viewed</span><span>1</span></div>
-      <div class="cat-item" tabindex="0"><span>Favorite</span><span>0</span></div>
-      <div class="cat-item" tabindex="0"><span>General</span><span>3</span></div>
+    <div class="sidebar-categories" id="categoryList">
+      <div class="cat-item active" tabindex="0" data-category="all"><span>All</span><span id="count-all">3</span></div>
+      <div class="cat-item" tabindex="0" data-category="recent"><span>Recently Viewed</span><span id="count-recent">1</span></div>
+      <div class="cat-item" tabindex="0" data-category="favorite"><span>Favorite</span><span id="count-fav">0</span></div>
+      <div class="cat-item" tabindex="0" data-category="general"><span>General</span><span id="count-gen">3</span></div>
     </div>
 
     <div class="channel-list" id="channelList"></div>
@@ -68,7 +68,7 @@
       </div>
       <div class="current-title" id="activeTitle">1. Demo live 3</div>
       <div class="player-controls-bottom">
-        <span id="favBtn">♡ Favorite</span>
+        <span id="favBtn" tabindex="0">♡ Favorite</span>
       </div>
     </div>
 
@@ -76,9 +76,9 @@
 
   <script>
     const channels = [
-      { id: 1, name: "Demo live 3", url: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8", isFavorite: false },
-      { id: 2, name: "Demo live 2", url: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8", isFavorite: false },
-      { id: 3, name: "Demo live 1", url: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8", isFavorite: false }
+      { id: 1, name: "Demo live 3", url: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8", isFavorite: false, category: "general" },
+      { id: 2, name: "Demo live 2", url: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8", isFavorite: false, category: "general" },
+      { id: 3, name: "Demo live 1", url: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8", isFavorite: false, category: "general" }
     ];
 
     const video = document.getElementById('video');
@@ -86,13 +86,37 @@
     const activeTitleEl = document.getElementById('activeTitle');
     const favBtn = document.getElementById('favBtn');
     let hls = null;
-    let activeChannelId = null;
+    let activeChannelId = 1;
+    let currentCategory = 'all';
+    let recentlyViewed = [1];
+
+    function updateCounts() {
+      document.getElementById('count-all').textContent = channels.length;
+      document.getElementById('count-recent').textContent = recentlyViewed.length;
+      document.getElementById('count-fav').textContent = channels.filter(c => c.isFavorite).length;
+      document.getElementById('count-gen').textContent = channels.filter(c => c.category === 'general').length;
+    }
 
     function renderChannels() {
       channelListEl.innerHTML = '';
-      channels.forEach((ch, index) => {
+      
+      let filteredChannels = channels;
+      if (currentCategory === 'favorite') {
+        filteredChannels = channels.filter(ch => ch.isFavorite);
+      } else if (currentCategory === 'general') {
+        filteredChannels = channels.filter(ch => ch.category === 'general');
+      } else if (currentCategory === 'recent') {
+        filteredChannels = channels.filter(ch => recentlyViewed.includes(ch.id));
+      }
+
+      if (filteredChannels.length === 0) {
+        channelListEl.innerHTML = '<div style="padding: 15px; color: #888;">No channels found</div>';
+        return;
+      }
+
+      filteredChannels.forEach((ch, index) => {
         const item = document.createElement('div');
-        item.className = `channel-item ${index === 0 ? 'active' : ''}`;
+        item.className = `channel-item ${ch.id === activeChannelId ? 'active' : ''}`;
         item.tabIndex = 0;
 
         item.onclick = () => handleChannelSelection(ch, item);
@@ -110,7 +134,25 @@
         `;
         channelListEl.appendChild(item);
       });
+      updateCounts();
     }
+
+    // بەڕێوەبردنی پۆلەکان
+    document.querySelectorAll('.cat-item').forEach(catEl => {
+      const selectCat = () => {
+        document.querySelectorAll('.cat-item').forEach(el => el.classList.remove('active'));
+        catEl.classList.add('active');
+        currentCategory = catEl.getAttribute('data-category');
+        renderChannels();
+      };
+      catEl.onclick = selectCat;
+      catEl.onkeydown = (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          selectCat();
+        }
+      };
+    });
 
     function handleChannelSelection(channel, element) {
       if (activeChannelId === channel.id) {
@@ -123,11 +165,14 @@
     function playChannel(channel, element) {
       activeChannelId = channel.id;
       
+      if (!recentlyViewed.includes(channel.id)) {
+        recentlyViewed.unshift(channel.id);
+      }
+
       document.querySelectorAll('.channel-item').forEach(el => el.classList.remove('active'));
       if (element) element.classList.add('active');
       activeTitleEl.textContent = `${channel.id}. ${channel.name}`;
 
-      // نوێکردنەوەی دۆخی Favorite بۆ ئەم کەناڵە
       favBtn.textContent = channel.isFavorite ? '❤️ Favorite' : '♡ Favorite';
       favBtn.style.color = channel.isFavorite ? '#ffde03' : '#aaa';
 
@@ -141,25 +186,39 @@
         video.src = channel.url;
         video.play();
       }
+      updateCounts();
     }
 
-    // ئیشپێکردنی Favorite
-    favBtn.onclick = () => {
-        const channel = channels.find(c => c.id === activeChannelId);
-        if (channel) {
-            channel.isFavorite = !channel.isFavorite;
-            favBtn.textContent = channel.isFavorite ? '❤️ Favorite' : '♡ Favorite';
-            favBtn.style.color = channel.isFavorite ? '#ffde03' : '#aaa';
+    // گۆڕینی دۆخی فەیڤۆریت
+    function toggleFavorite() {
+      const channel = channels.find(c => c.id === activeChannelId);
+      if (channel) {
+        channel.isFavorite = !channel.isFavorite;
+        favBtn.textContent = channel.isFavorite ? '❤️ Favorite' : '♡ Favorite';
+        favBtn.style.color = channel.isFavorite ? '#ffde03' : '#aaa';
+        updateCounts();
+        if (currentCategory === 'favorite') {
+          renderChannels();
         }
+      }
+    }
+
+    favBtn.onclick = toggleFavorite;
+    favBtn.onkeydown = (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        toggleFavorite();
+      }
     };
 
     function toggleFullScreen() {
+      const wrapper = document.getElementById('videoWrapper');
       if (!document.fullscreenElement) {
-        const wrapper = document.getElementById('videoWrapper');
         if (wrapper.requestFullscreen) wrapper.requestFullscreen();
         else if (wrapper.webkitRequestFullscreen) wrapper.webkitRequestFullscreen();
+        else if (video.requestFullscreen) video.requestFullscreen();
       } else {
-        document.exitFullscreen();
+        if (document.exitFullscreen) document.exitFullscreen();
       }
     }
 
