@@ -9,37 +9,40 @@
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; }
     body { background-color: #0f0c1b; color: #fff; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
     
+    /* Header Top Bar */
     .header { height: 50px; background: #18132b; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; border-bottom: 1px solid #2a2444; }
     .header-left { display: flex; align-items: center; gap: 15px; font-size: 20px; font-weight: bold; }
     .search-box { background: #251f3d; border-radius: 20px; padding: 5px 15px; display: flex; align-items: center; width: 300px; }
     .search-box input { background: transparent; border: none; color: #fff; width: 100%; outline: none; margin-left: 8px; }
 
+    /* Layout Container */
     .main-container { flex: 1; display: flex; overflow: hidden; }
 
-    .sidebar-categories { width: 190px; background: #141024; border-right: 1px solid #2a2444; padding: 15px; }
+    /* Column 1: Categories */
+    .sidebar-categories { width: 250px; background: #141024; border-right: 1px solid #2a2444; padding: 15px; }
     .cat-search { background: #251f3d; border: 1px solid #3d345e; color: #fff; width: 100%; padding: 8px; border-radius: 4px; margin-bottom: 15px; }
     .cat-item { display: flex; justify-content: space-between; padding: 10px 12px; border: 1px solid #2a2444; margin-bottom: 8px; border-radius: 4px; cursor: pointer; color: #ccc; outline: none; }
     .cat-item.active, .cat-item:hover, .cat-item:focus { background: #251f3d; border-color: #ffde03; color: #ffde03; }
 
-    .channel-list { width: 240px; background: #18132b; border-right: 1px solid #2a2444; padding: 15px; overflow-y: auto; }
+    /* Column 2: Channel List */
+    .channel-list { width: 300px; background: #18132b; border-right: 1px solid #2a2444; padding: 15px; overflow-y: auto; }
     .channel-item { display: flex; align-items: center; gap: 12px; padding: 12px; border: 1px solid #2a2444; margin-bottom: 10px; border-radius: 4px; cursor: pointer; background: #1f1938; outline: none; }
+    /* نیشانەی focus بۆ شاشەی تەلەفزیۆن (بە کۆنترۆڵ یان کیبۆرد) */
     .channel-item.active, .channel-item:hover, .channel-item:focus { border-color: #ffde03; background: #2b234d; }
     .channel-num { font-weight: bold; font-size: 16px; width: 20px; }
     .channel-icon { width: 24px; height: 16px; background: #fff; border-radius: 2px; }
 
+    /* Column 3: Video Player */
     .player-section { flex: 1; background: #0f0c1b; padding: 20px; display: flex; flex-direction: column; }
     .video-wrapper { width: 100%; background: #000; border-radius: 8px; overflow: hidden; aspect-ratio: 16/9; max-height: 65vh; position: relative; }
     video { width: 100%; height: 100%; object-fit: contain; }
     .current-title { font-size: 22px; font-weight: bold; margin-top: 15px; color: #fff; }
-    
-    .player-controls-bottom { margin-top: 15px; }
-    .fav-btn { background: transparent; border: none; color: #aaa; font-size: 16px; cursor: pointer; display: flex; align-items: center; gap: 8px; outline: none; padding: 5px 0; }
-    .fav-btn:hover, .fav-btn:focus { color: #fff; }
-    .fav-btn.active { color: #e91e63; }
+    .player-controls-bottom { display: flex; gap: 20px; margin-top: 15px; color: #aaa; font-size: 14px; }
   </style>
 </head>
 <body>
 
+  <!-- Top Header Bar -->
   <div class="header">
     <div class="header-left">
       <span>&lt;</span>
@@ -50,79 +53,61 @@
     </div>
   </div>
 
+  <!-- Main Body Layout -->
   <div class="main-container">
     
+    <!-- Left Sidebar: Categories -->
     <div class="sidebar-categories">
       <input type="text" class="cat-search" placeholder="Search in categories">
-      <div class="cat-item active" tabindex="0" onclick="setCategory('all', this)"><span>All</span><span id="countAll">3</span></div>
-      <div class="cat-item" tabindex="0" onclick="setCategory('favorite', this)"><span>Favorite</span><span id="countFav">0</span></div>
-      <div class="cat-item" tabindex="0" onclick="setCategory('هەواڵ', this)"><span>هەواڵ</span><span id="countGen">3</span></div>
+      <div class="cat-item active" tabindex="0"><span>All</span><span>3</span></div>
+      <div class="cat-item" tabindex="0"><span>Recently Viewed</span><span>1</span></div>
+      <div class="cat-item" tabindex="0"><span>Favorite</span><span>0</span></div>
+      <div class="cat-item" tabindex="0"><span>General</span><span>3</span></div>
     </div>
 
+    <!-- Middle Column: Channel List -->
     <div class="channel-list" id="channelList"></div>
 
+    <!-- Right Column: Video & Info -->
     <div class="player-section">
       <div class="video-wrapper" id="videoWrapper">
         <video id="video" controls autoplay></video>
       </div>
       <div class="current-title" id="activeTitle">1. Demo live 3</div>
       <div class="player-controls-bottom">
-        <button id="favBtn" class="fav-btn" onclick="toggleFavorite()">♡ Favorite</button>
+        <span>♡ Favorite</span>
+        <span>🕒 Catch Up</span>
+        <span>⚙️ External players</span>
       </div>
     </div>
 
   </div>
 
   <script>
-    // لێرەدا دەتوانیت لینکی m3u8 یان ts ڕاستەوخۆ دابنێیت
+    // لیستی کەناڵەکان
     const channels = [
-      { id: 1, name: "RUDAW HD", url: "https://live.rudaw.net/hls/rudaw-tv/master.m3u8" },
+      { id: 1, name: "Demo live 3", url: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8" },
       { id: 2, name: "Demo live 2", url: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8" },
-      { id: 3, name: "Speda HD", url: "http://line.trxdnscloud.ru:80/live/1naebx0n1p/en1cy28eqj/324587.ts" }
+      { id: 3, name: "Demo live 1", url: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8" }
     ];
 
     const video = document.getElementById('video');
     const channelListEl = document.getElementById('channelList');
     const activeTitleEl = document.getElementById('activeTitle');
-    const favBtn = document.getElementById('favBtn');
-    
     let hls = null;
     let activeChannelId = null;
-    let currentCategory = 'all';
-    let favorites = JSON.parse(localStorage.getItem('rebazTvFavs')) || [];
-
-    function updateCategoryCounts() {
-      document.getElementById('countAll').textContent = channels.length;
-      document.getElementById('countGen').textContent = channels.length;
-      document.getElementById('countFav').textContent = favorites.length;
-    }
-
-    function setCategory(cat, element) {
-      currentCategory = cat;
-      document.querySelectorAll('.cat-item').forEach(el => el.classList.remove('active'));
-      if (element) element.classList.add('active');
-      renderChannels();
-    }
 
     function renderChannels() {
       channelListEl.innerHTML = '';
-      
-      let filteredChannels = channels;
-      if (currentCategory === 'favorite') {
-        filteredChannels = channels.filter(ch => favorites.includes(ch.id));
-      }
-
-      if (filteredChannels.length === 0) {
-        channelListEl.innerHTML = '<div style="padding:15px;color:#aaa;text-align:center;">No channels found</div>';
-        return;
-      }
-
-      filteredChannels.forEach((ch, index) => {
+      channels.forEach((ch, index) => {
         const item = document.createElement('div');
-        item.className = `channel-item ${activeChannelId === ch.id ? 'active' : ''}`;
-        item.tabIndex = 0;
+        item.className = `channel-item ${index === 0 ? 'active' : ''}`;
+        item.tabIndex = 0; // یارمەتیدەرە بۆ بەکارهێنانی کۆنترۆڵی تەلەفزیۆن
 
+        // ڕووداوی کرتەکردن
         item.onclick = () => handleChannelSelection(ch, item);
+
+        // ڕووداوی دوگمەی Enter یان OK لە تەلەفزیۆن
         item.onkeydown = (e) => {
           if (e.key === 'Enter') {
             e.preventDefault();
@@ -139,77 +124,55 @@
       });
     }
 
+    // دیاریکردنی جۆری کارلێک (ئایا تازەیە یان دووەم جارە)
     function handleChannelSelection(channel, element) {
       if (activeChannelId === channel.id) {
+        // ئەگەر کەناڵەکە هەر خۆی ئیشی دەکرد، ئەوا بیکە بە فول سکرین
         toggleFullScreen();
       } else {
+        // ئەگەر کەناڵێکی تازە بوو، پێی بکە
         playChannel(channel, element);
       }
     }
 
+    // پێکردنی ڤیدیۆ
     function playChannel(channel, element) {
       activeChannelId = channel.id;
       
       document.querySelectorAll('.channel-item').forEach(el => el.classList.remove('active'));
       if (element) element.classList.add('active');
       activeTitleEl.textContent = `${channel.id}. ${channel.name}`;
-      checkFavoriteStatus();
 
-      // ** بەشی زیرەکی پلەیەرەکە **
-      // پشکنین دەکات بزانێت ئایا لەناو ئەپی ئەندرۆیدەکەدایە؟
-      if (typeof AndroidBridge !== 'undefined' && AndroidBridge.playInExo) {
-        // ئەگەر لەناو ئەپەکە بوو، ئەوا دەینێرێت بۆ پلەیەری VLC ناو ئەپەکە کە هەموو فۆرماتێک دەخوێنێتەوە (.ts, .mkv)
-        AndroidBridge.playInExo(channel.url, channel.name);
-      } else {
-        // ئەگەر لەسەر کۆمپیوتەر یان وێبگەڕی ئاسایی بوو، ئەوا پلەیەری HTML بەکاردێنێت بۆ (m3u8)
-        if (Hls.isSupported()) {
-          if (hls) hls.destroy();
-          hls = new Hls();
-          hls.loadSource(channel.url);
-          hls.attachMedia(video);
-          hls.on(Hls.Events.MANIFEST_PARSED, () => video.play());
-        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-          video.src = channel.url;
-          video.play();
-        }
+      if (Hls.isSupported()) {
+        if (hls) hls.destroy();
+        hls = new Hls();
+        hls.loadSource(channel.url);
+        hls.attachMedia(video);
+        hls.on(Hls.Events.MANIFEST_PARSED, () => video.play());
+      } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+        video.src = channel.url;
+        video.play();
       }
     }
 
-    function toggleFavorite() {
-      if (!activeChannelId) return;
-      if (favorites.includes(activeChannelId)) {
-        favorites = favorites.filter(id => id !== activeChannelId);
-      } else {
-        favorites.push(activeChannelId);
-      }
-      localStorage.setItem('rebazTvFavs', JSON.stringify(favorites));
-      checkFavoriteStatus();
-      updateCategoryCounts();
-      if (currentCategory === 'favorite') renderChannels();
-    }
-
-    function checkFavoriteStatus() {
-      if (favorites.includes(activeChannelId)) {
-        favBtn.innerHTML = '♥ Favorite';
-        favBtn.classList.add('active');
-      } else {
-        favBtn.innerHTML = '♡ Favorite';
-        favBtn.classList.remove('active');
-      }
-    }
-
+    // کردنی ڤیدیۆ بە پڕ بە شاشە (فول سکرین)
     function toggleFullScreen() {
-      // ئەگەر لەناو ئەندرۆیدەکە نەبووین، ئەوا شاشەی وێبگەڕەکە گەورە بکە
-      if (typeof AndroidBridge === 'undefined') {
-        if (!document.fullscreenElement) {
-          if (video.requestFullscreen) video.requestFullscreen();
-          else if (video.webkitRequestFullscreen) video.webkitRequestFullscreen();
+      if (!document.fullscreenElement) {
+        if (video.requestFullscreen) {
+          video.requestFullscreen();
+        } else if (video.mozRequestFullScreen) { // Firefox
+          video.mozRequestFullScreen();
+        } else if (video.webkitRequestFullscreen) { // Chrome, Safari and Opera
+          video.webkitRequestFullscreen();
+        } else if (video.msRequestFullscreen) { // IE/Edge
+          video.msRequestFullscreen();
         }
       }
     }
 
-    updateCategoryCounts();
+    // لە سەرەتادا یەکەم کەناڵ پێ بکە
     renderChannels();
+    playChannel(channels[0], document.querySelector('.channel-item'));
   </script>
 </body>
 </html>
