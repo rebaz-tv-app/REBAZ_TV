@@ -34,13 +34,15 @@
     .player-section { flex: 1; background: #0f0c1b; padding: 20px; display: flex; flex-direction: column; }
     .video-wrapper { width: 100%; background: #000; border-radius: 8px; overflow: hidden; aspect-ratio: 16/9; max-height: 65vh; position: relative; transition: all 0.3s ease; }
     
-    /* دۆخی فول سکرینەی ڕاستەقینە (Fullscreen API) */
-    .video-wrapper:fullscreen,
-    .video-wrapper:-webkit-full-screen {
+    /* دۆخی فول سکرین بە CSS */
+    .video-wrapper.fullscreen-mode {
+      position: fixed !important;
+      top: 0 !important;
+      left: 0 !important;
       width: 100vw !important;
       height: 100vh !important;
       max-height: 100vh !important;
-      background: #000 !important;
+      z-index: 999999 !important;
       border-radius: 0 !important;
       padding: 0 !important;
       margin: 0 !important;
@@ -103,6 +105,9 @@
     let activeChannelId = 1;
     let currentCategory = 'all';
     let recentlyViewed = [1];
+
+    // دروستکردنی خاڵی مێژوو لە سەرەتادا بۆ ڕێگریکردن لە داخستنی ئەپەکە
+    history.pushState({ page: 'main' }, '', window.location.href);
 
     function updateCounts() {
       document.getElementById('count-all').textContent = channels.length;
@@ -176,31 +181,29 @@
     }
 
     function enterFullScreen() {
-      if (videoWrapper.requestFullscreen) {
-        videoWrapper.requestFullscreen();
-      } else if (videoWrapper.webkitRequestFullscreen) {
-        videoWrapper.webkitRequestFullscreen();
-      } else if (videoWrapper.msRequestFullscreen) {
-        videoWrapper.msRequestFullscreen();
+      if (!videoWrapper.classList.contains('fullscreen-mode')) {
+        videoWrapper.classList.add('fullscreen-mode');
+        // زیادکردنی مێژوو بۆ ئەوەی دوگمەی گەڕانەوە ئەم دۆخە بگرێت
+        history.pushState({ fullscreen: true }, '', window.location.href);
       }
     }
 
-    // گەڕانەوەی فۆکەس بۆ سەر لیستی کەناڵەکان کاتێک لە فول سکرین دەردەچێت
-    document.addEventListener('fullscreenchange', () => {
-      if (!document.fullscreenElement) {
+    function exitFullScreen() {
+      if (videoWrapper.classList.contains('fullscreen-mode')) {
+        videoWrapper.classList.remove('fullscreen-mode');
         const activeItem = channelListEl.querySelector('.channel-item.active');
         if (activeItem) {
           activeItem.focus();
         }
       }
-    });
+    }
 
-    document.addEventListener('webkitfullscreenchange', () => {
-      if (!document.webkitFullscreenElement) {
-        const activeItem = channelListEl.querySelector('.channel-item.active');
-        if (activeItem) {
-          activeItem.focus();
-        }
+    // چاودێریکردنی دوگمەی گەڕانەوە (Back button) بۆ گەڕانەوە بۆ سەر کەناڵەکان
+    window.addEventListener('popstate', (e) => {
+      if (videoWrapper.classList.contains('fullscreen-mode')) {
+        exitFullScreen();
+        // پاراستنی مێژوو بۆ ئەوەی ئەپەکە نەداخات
+        history.pushState({ page: 'main' }, '', window.location.href);
       }
     });
 
