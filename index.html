@@ -20,14 +20,12 @@
 
     /* Column 1: Categories */
     .sidebar-categories { width: 250px; background: #141024; border-right: 1px solid #2a2444; padding: 15px; }
-    .cat-search { background: #251f3d; border: 1px solid #3d345e; color: #fff; width: 100%; padding: 8px; border-radius: 4px; margin-bottom: 15px; }
     .cat-item { display: flex; justify-content: space-between; padding: 10px 12px; border: 1px solid #2a2444; margin-bottom: 8px; border-radius: 4px; cursor: pointer; color: #ccc; outline: none; }
     .cat-item.active, .cat-item:hover, .cat-item:focus { background: #251f3d; border-color: #ffde03; color: #ffde03; }
 
     /* Column 2: Channel List */
     .channel-list { width: 300px; background: #18132b; border-right: 1px solid #2a2444; padding: 15px; overflow-y: auto; }
     .channel-item { display: flex; align-items: center; gap: 12px; padding: 12px; border: 1px solid #2a2444; margin-bottom: 10px; border-radius: 4px; cursor: pointer; background: #1f1938; outline: none; }
-    /* نیشانەی focus بۆ شاشەی تەلەفزیۆن (بە کۆنترۆڵ یان کیبۆرد) */
     .channel-item.active, .channel-item:hover, .channel-item:focus { border-color: #ffde03; background: #2b234d; }
     .channel-num { font-weight: bold; font-size: 16px; width: 20px; }
     .channel-icon { width: 24px; height: 16px; background: #fff; border-radius: 2px; }
@@ -37,12 +35,12 @@
     .video-wrapper { width: 100%; background: #000; border-radius: 8px; overflow: hidden; aspect-ratio: 16/9; max-height: 65vh; position: relative; }
     video { width: 100%; height: 100%; object-fit: contain; }
     .current-title { font-size: 22px; font-weight: bold; margin-top: 15px; color: #fff; }
-    .player-controls-bottom { display: flex; gap: 20px; margin-top: 15px; color: #aaa; font-size: 14px; }
+    .player-controls-bottom { display: flex; gap: 20px; margin-top: 15px; color: #aaa; font-size: 14px; cursor: pointer; }
+    .player-controls-bottom span:hover { color: #ffde03; }
   </style>
 </head>
 <body>
 
-  <!-- Top Header Bar -->
   <div class="header">
     <div class="header-left">
       <span>&lt;</span>
@@ -53,47 +51,40 @@
     </div>
   </div>
 
-  <!-- Main Body Layout -->
   <div class="main-container">
     
-    <!-- Left Sidebar: Categories -->
     <div class="sidebar-categories">
-      <input type="text" class="cat-search" placeholder="Search in categories">
       <div class="cat-item active" tabindex="0"><span>All</span><span>3</span></div>
       <div class="cat-item" tabindex="0"><span>Recently Viewed</span><span>1</span></div>
       <div class="cat-item" tabindex="0"><span>Favorite</span><span>0</span></div>
       <div class="cat-item" tabindex="0"><span>General</span><span>3</span></div>
     </div>
 
-    <!-- Middle Column: Channel List -->
     <div class="channel-list" id="channelList"></div>
 
-    <!-- Right Column: Video & Info -->
     <div class="player-section">
       <div class="video-wrapper" id="videoWrapper">
         <video id="video" controls autoplay></video>
       </div>
       <div class="current-title" id="activeTitle">1. Demo live 3</div>
       <div class="player-controls-bottom">
-        <span>♡ Favorite</span>
-        <span>🕒 Catch Up</span>
-        <span>⚙️ External players</span>
+        <span id="favBtn">♡ Favorite</span>
       </div>
     </div>
 
   </div>
 
   <script>
-    // لیستی کەناڵەکان
     const channels = [
-      { id: 1, name: "Demo live 3", url: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8" },
-      { id: 2, name: "Demo live 2", url: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8" },
-      { id: 3, name: "Demo live 1", url: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8" }
+      { id: 1, name: "Demo live 3", url: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8", isFavorite: false },
+      { id: 2, name: "Demo live 2", url: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8", isFavorite: false },
+      { id: 3, name: "Demo live 1", url: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8", isFavorite: false }
     ];
 
     const video = document.getElementById('video');
     const channelListEl = document.getElementById('channelList');
     const activeTitleEl = document.getElementById('activeTitle');
+    const favBtn = document.getElementById('favBtn');
     let hls = null;
     let activeChannelId = null;
 
@@ -102,12 +93,9 @@
       channels.forEach((ch, index) => {
         const item = document.createElement('div');
         item.className = `channel-item ${index === 0 ? 'active' : ''}`;
-        item.tabIndex = 0; // یارمەتیدەرە بۆ بەکارهێنانی کۆنترۆڵی تەلەفزیۆن
+        item.tabIndex = 0;
 
-        // ڕووداوی کرتەکردن
         item.onclick = () => handleChannelSelection(ch, item);
-
-        // ڕووداوی دوگمەی Enter یان OK لە تەلەفزیۆن
         item.onkeydown = (e) => {
           if (e.key === 'Enter') {
             e.preventDefault();
@@ -124,24 +112,24 @@
       });
     }
 
-    // دیاریکردنی جۆری کارلێک (ئایا تازەیە یان دووەم جارە)
     function handleChannelSelection(channel, element) {
       if (activeChannelId === channel.id) {
-        // ئەگەر کەناڵەکە هەر خۆی ئیشی دەکرد، ئەوا بیکە بە فول سکرین
         toggleFullScreen();
       } else {
-        // ئەگەر کەناڵێکی تازە بوو، پێی بکە
         playChannel(channel, element);
       }
     }
 
-    // پێکردنی ڤیدیۆ
     function playChannel(channel, element) {
       activeChannelId = channel.id;
       
       document.querySelectorAll('.channel-item').forEach(el => el.classList.remove('active'));
       if (element) element.classList.add('active');
       activeTitleEl.textContent = `${channel.id}. ${channel.name}`;
+
+      // نوێکردنەوەی دۆخی Favorite بۆ ئەم کەناڵە
+      favBtn.textContent = channel.isFavorite ? '❤️ Favorite' : '♡ Favorite';
+      favBtn.style.color = channel.isFavorite ? '#ffde03' : '#aaa';
 
       if (Hls.isSupported()) {
         if (hls) hls.destroy();
@@ -155,22 +143,26 @@
       }
     }
 
-    // کردنی ڤیدیۆ بە پڕ بە شاشە (فول سکرین)
+    // ئیشپێکردنی Favorite
+    favBtn.onclick = () => {
+        const channel = channels.find(c => c.id === activeChannelId);
+        if (channel) {
+            channel.isFavorite = !channel.isFavorite;
+            favBtn.textContent = channel.isFavorite ? '❤️ Favorite' : '♡ Favorite';
+            favBtn.style.color = channel.isFavorite ? '#ffde03' : '#aaa';
+        }
+    };
+
     function toggleFullScreen() {
       if (!document.fullscreenElement) {
-        if (video.requestFullscreen) {
-          video.requestFullscreen();
-        } else if (video.mozRequestFullScreen) { // Firefox
-          video.mozRequestFullScreen();
-        } else if (video.webkitRequestFullscreen) { // Chrome, Safari and Opera
-          video.webkitRequestFullscreen();
-        } else if (video.msRequestFullscreen) { // IE/Edge
-          video.msRequestFullscreen();
-        }
+        const wrapper = document.getElementById('videoWrapper');
+        if (wrapper.requestFullscreen) wrapper.requestFullscreen();
+        else if (wrapper.webkitRequestFullscreen) wrapper.webkitRequestFullscreen();
+      } else {
+        document.exitFullscreen();
       }
     }
 
-    // لە سەرەتادا یەکەم کەناڵ پێ بکە
     renderChannels();
     playChannel(channels[0], document.querySelector('.channel-item'));
   </script>
