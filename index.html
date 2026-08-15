@@ -1,36 +1,134 @@
 <!DOCTYPE html>
-<html lang="ku" dir="rtl">
+<html lang="ku" dir="ltr">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>REBAZ TV - Live Web Player</title>
+  <title>Live TV Player</title>
   <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
   <style>
-    body { margin: 0; background: #131021; color: #fff; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; }
-    .player-container { width: 90%; max-width: 900px; background: #1B162E; border-radius: 12px; padding: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
-    video { width: 100%; border-radius: 8px; background: #000; }
-    .channel-title { font-size: 20px; font-weight: bold; color: #FFDE03; margin-top: 12px; }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; }
+    body { background-color: #0f0c1b; color: #fff; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+    
+    /* Header Top Bar */
+    .header { height: 50px; background: #18132b; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; border-bottom: 1px solid #2a2444; }
+    .header-left { display: flex; align-items: center; gap: 15px; font-size: 20px; font-weight: bold; }
+    .search-box { background: #251f3d; border-radius: 20px; padding: 5px 15px; display: flex; align-items: center; width: 300px; }
+    .search-box input { background: transparent; border: none; color: #fff; width: 100%; outline: none; margin-left: 8px; }
+
+    /* Layout Container */
+    .main-container { flex: 1; display: flex; overflow: hidden; }
+
+    /* Column 1: Categories */
+    .sidebar-categories { width: 250px; background: #141024; border-right: 1px solid #2a2444; padding: 15px; }
+    .cat-search { background: #251f3d; border: 1px solid #3d345e; color: #fff; width: 100%; padding: 8px; border-radius: 4px; margin-bottom: 15px; }
+    .cat-item { display: flex; justify-content: space-between; padding: 10px 12px; border: 1px solid #2a2444; margin-bottom: 8px; border-radius: 4px; cursor: pointer; color: #ccc; }
+    .cat-item.active, .cat-item:hover { background: #251f3d; border-color: #ffde03; color: #ffde03; }
+
+    /* Column 2: Channel List */
+    .channel-list { width: 300px; background: #18132b; border-right: 1px solid #2a2444; padding: 15px; overflow-y: auto; }
+    .channel-item { display: flex; align-items: center; gap: 12px; padding: 12px; border: 1px solid #2a2444; margin-bottom: 10px; border-radius: 4px; cursor: pointer; background: #1f1938; }
+    .channel-item.active, .channel-item:hover { border-color: #ffde03; background: #2b234d; }
+    .channel-num { font-weight: bold; font-size: 16px; width: 20px; }
+    .channel-icon { width: 24px; height: 16px; background: #fff; border-radius: 2px; }
+
+    /* Column 3: Video Player */
+    .player-section { flex: 1; background: #0f0c1b; padding: 20px; display: flex; flex-direction: column; }
+    .video-wrapper { width: 100%; background: #000; border-radius: 8px; overflow: hidden; aspect-ratio: 16/9; max-height: 65vh; }
+    video { width: 100%; height: 100%; object-fit: contain; }
+    .current-title { font-size: 22px; font-weight: bold; margin-top: 15px; color: #fff; }
+    .player-controls-bottom { display: flex; gap: 20px; margin-top: 15px; color: #aaa; font-size: 14px; }
   </style>
 </head>
 <body>
-  <div class="player-container">
-    <video id="video" controls autoplay></video>
-    <div class="channel-title" id="title">REBAZ TV Live Stream</div>
+
+  <!-- Top Header Bar -->
+  <div class="header">
+    <div class="header-left">
+      <span>&lt;</span>
+      <span>Live TV</span>
+    </div>
+    <div class="search-box">
+      <input type="text" placeholder="Search">
+    </div>
+  </div>
+
+  <!-- Main Body Layout -->
+  <div class="main-container">
+    
+    <!-- Left Sidebar: Categories -->
+    <div class="sidebar-categories">
+      <input type="text" class="cat-search" placeholder="Search in categories">
+      <div class="cat-item active"><span>All</span><span>3</span></div>
+      <div class="cat-item"><span>Recently Viewed</span><span>1</span></div>
+      <div class="cat-item"><span>Favorite</span><span>0</span></div>
+      <div class="cat-item"><span>General</span><span>3</span></div>
+    </div>
+
+    <!-- Middle Column: Channel List -->
+    <div class="channel-list" id="channelList"></div>
+
+    <!-- Right Column: Video & Info -->
+    <div class="player-section">
+      <div class="video-wrapper">
+        <video id="video" controls autoplay></video>
+      </div>
+      <div class="current-title" id="activeTitle">1. Demo live 3</div>
+      <div class="player-controls-bottom">
+        <span>♡ Favorite</span>
+        <span>🕒 Catch Up</span>
+        <span>⚙️ External players</span>
+      </div>
+    </div>
+
   </div>
 
   <script>
-    const video = document.getElementById('video');
-    const streamUrl = 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8'; // لینکی ستریم لێرە دابنێ
+    // لیستی کەناڵەکانت لێرە زیاد بکە یان دەستکارییان بکە
+    const channels = [
+      { id: 1, name: "Demo live 3", url: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8" },
+      { id: 2, name: "Demo live 2", url: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8" },
+      { id: 3, name: "Demo live 1", url: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8" }
+    ];
 
-    if (Hls.isSupported()) {
-      const hls = new Hls();
-      hls.loadSource(streamUrl);
-      hls.attachMedia(video);
-      hls.on(Hls.Events.MANIFEST_PARSED, () => video.play());
-    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-      video.src = streamUrl;
-      video.addEventListener('loadedmetadata', () => video.play());
+    const video = document.getElementById('video');
+    const channelListEl = document.getElementById('channelList');
+    const activeTitleEl = document.getElementById('activeTitle');
+    let hls = null;
+
+    function renderChannels() {
+      channelListEl.innerHTML = '';
+      channels.forEach((ch, index) => {
+        const item = document.createElement('div');
+        item.className = `channel-item ${index === 0 ? 'active' : ''}`;
+        item.onclick = () => playChannel(ch, item);
+        item.innerHTML = `
+          <span class="channel-num">${ch.id}</span>
+          <span class="channel-icon"></span>
+          <span>${ch.name}</span>
+        `;
+        channelListEl.appendChild(item);
+      });
     }
+
+    function playChannel(channel, element) {
+      document.querySelectorAll('.channel-item').forEach(el => el.classList.remove('active'));
+      if (element) element.classList.add('active');
+      activeTitleEl.textContent = `${channel.id}. ${channel.name}`;
+
+      if (Hls.isSupported()) {
+        if (hls) hls.destroy();
+        hls = new Hls();
+        hls.loadSource(channel.url);
+        hls.attachMedia(video);
+        hls.on(Hls.Events.MANIFEST_PARSED, () => video.play());
+      } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+        video.src = channel.url;
+        video.play();
+      }
+    }
+
+    renderChannels();
+    playChannel(channels[0], document.querySelector('.channel-item'));
   </script>
 </body>
 </html>
