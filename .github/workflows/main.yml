@@ -9,23 +9,22 @@ jobs:
 
     steps:
 
-      - name: Download Repository
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Java
+      - name: Setup JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
 
-      - name: Setup Android
+      - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
       - name: Accept Android Licenses
         run: yes | sdkmanager --licenses || true
 
       - name: Create Android Project
-        shell: bash
         run: |
 
           mkdir -p app/src/main/java/tv/rebaz/smart
@@ -100,13 +99,9 @@ jobs:
           }
 
           dependencies {
-
               implementation 'androidx.appcompat:appcompat:1.7.0'
-
               implementation 'androidx.media3:media3-exoplayer:1.6.1'
-
               implementation 'androidx.media3:media3-exoplayer-hls:1.6.1'
-
               implementation 'androidx.media3:media3-ui:1.6.1'
           }
           EOF
@@ -114,20 +109,14 @@ jobs:
           cat > app/src/main/res/values/styles.xml <<'EOF'
           <?xml version="1.0" encoding="utf-8"?>
           <resources>
-
-              <style name="AppTheme"
-                  parent="Theme.AppCompat.NoActionBar">
-
+              <style name="AppTheme" parent="Theme.AppCompat.NoActionBar">
                   <item name="android:fontFamily">sans</item>
-                  <item name="android:windowActionModeOverlay">true</item>
                   <item name="android:colorAccent">#ffde03</item>
-                  <item name="android:windowLightStatusBar">false</item>
                   <item name="android:statusBarColor">#0f0c1b</item>
                   <item name="android:navigationBarColor">#0f0c1b</item>
+                  <item name="android:windowLightStatusBar">false</item>
                   <item name="android:windowNoTitle">true</item>
-
               </style>
-
           </resources>
           EOF
 
@@ -142,8 +131,7 @@ jobs:
                   android:allowBackup="false"
                   android:label="REBAZ SMART TV"
                   android:theme="@style/AppTheme"
-                  android:usesCleartextTraffic="true"
-                  android:supportsRtl="true">
+                  android:usesCleartextTraffic="true">
 
                   <activity
                       android:name=".MainActivity"
@@ -152,13 +140,9 @@ jobs:
                       android:exported="true">
 
                       <intent-filter>
-
                           <action android:name="android.intent.action.MAIN" />
-
                           <category android:name="android.intent.category.LAUNCHER" />
-
                           <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
-
                       </intent-filter>
 
                   </activity>
@@ -171,12 +155,11 @@ jobs:
           cat > app/src/main/java/tv/rebaz/smart/MainActivity.java <<'EOF'
           package tv.rebaz.smart;
 
-          import android.annotation.SuppressLint;
           import android.app.Activity;
           import android.graphics.Color;
           import android.os.Bundle;
           import android.view.View;
-          import android.view.Window;
+          import android.view.WindowManager;
           import android.webkit.JavascriptInterface;
           import android.webkit.WebChromeClient;
           import android.webkit.WebSettings;
@@ -184,60 +167,36 @@ jobs:
           import android.webkit.WebViewClient;
           import android.widget.FrameLayout;
 
-          import androidx.annotation.Nullable;
           import androidx.media3.common.MediaItem;
-          import androidx.media3.common.PlaybackException;
-          import androidx.media3.common.Player;
           import androidx.media3.exoplayer.ExoPlayer;
           import androidx.media3.ui.PlayerView;
 
           public class MainActivity extends Activity {
 
-              private WebView webView;
               private ExoPlayer player;
               private PlayerView playerView;
+              private WebView webView;
 
-              @SuppressLint("SetJavaScriptEnabled")
               @Override
-              protected void onCreate(@Nullable Bundle savedInstanceState) {
-
+              protected void onCreate(Bundle savedInstanceState) {
                   super.onCreate(savedInstanceState);
 
                   getWindow().setFlags(
-                      Window.FLAG_KEEP_SCREEN_ON,
-                      Window.FLAG_KEEP_SCREEN_ON
+                      WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON,
+                      WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
                   );
 
-                  getWindow().setStatusBarColor(
-                      Color.rgb(15,12,27)
-                  );
+                  FrameLayout root = new FrameLayout(this);
 
-                  getWindow().setNavigationBarColor(
-                      Color.rgb(15,12,27)
-                  );
+                  webView = new WebView(this);
 
-                  FrameLayout root =
-                      new FrameLayout(this);
-
-                  webView =
-                      new WebView(this);
-
-                  WebSettings settings =
-                      webView.getSettings();
-
+                  WebSettings settings = webView.getSettings();
                   settings.setJavaScriptEnabled(true);
                   settings.setDomStorageEnabled(true);
                   settings.setMediaPlaybackRequiresUserGesture(false);
-                  settings.setAllowFileAccess(true);
-                  settings.setAllowContentAccess(true);
 
-                  webView.setWebChromeClient(
-                      new WebChromeClient()
-                  );
-
-                  webView.setWebViewClient(
-                      new WebViewClient()
-                  );
+                  webView.setWebViewClient(new WebViewClient());
+                  webView.setWebChromeClient(new WebChromeClient());
 
                   webView.addJavascriptInterface(
                       new PlayerBridge(),
@@ -250,67 +209,20 @@ jobs:
 
                   root.addView(
                       webView,
-                      new FrameLayout.LayoutParams(
-                          -1,
-                          -1
-                      )
+                      new FrameLayout.LayoutParams(-1, -1)
                   );
 
-                  player =
-                      new ExoPlayer.Builder(this)
-                          .build();
+                  player = new ExoPlayer.Builder(this).build();
 
-                  playerView =
-                      new PlayerView(this);
-
+                  playerView = new PlayerView(this);
                   playerView.setPlayer(player);
-
                   playerView.setUseController(true);
-
-                  playerView.setBackgroundColor(
-                      Color.BLACK
-                  );
-
-                  playerView.setVisibility(
-                      View.GONE
-                  );
+                  playerView.setBackgroundColor(Color.BLACK);
+                  playerView.setVisibility(View.GONE);
 
                   root.addView(
                       playerView,
-                      new FrameLayout.LayoutParams(
-                          -1,
-                          -1
-                      )
-                  );
-
-                  player.addListener(
-                      new Player.Listener() {
-
-                          @Override
-                          public void onPlaybackStateChanged(
-                              int state
-                          ) {
-
-                              if (
-                                  state ==
-                                  Player.STATE_READY
-                              ) {
-
-                                  player.play();
-                              }
-                          }
-
-                          @Override
-                          public void onPlayerError(
-                              PlaybackException error
-                          ) {
-
-                              webView.evaluateJavascript(
-                                  "window.nativePlayerError && window.nativePlayerError();",
-                                  null
-                              );
-                          }
-                      }
+                      new FrameLayout.LayoutParams(-1, -1)
                   );
 
                   setContentView(root);
@@ -319,87 +231,43 @@ jobs:
               public class PlayerBridge {
 
                   @JavascriptInterface
-                  public void play(
-                      String url
-                  ) {
-
+                  public void play(String url) {
                       runOnUiThread(() -> {
 
-                          try {
+                          MediaItem item =
+                              MediaItem.fromUri(url);
 
-                              MediaItem item =
-                                  MediaItem.fromUri(url);
+                          player.setMediaItem(item);
+                          player.prepare();
+                          player.play();
 
-                              player.setMediaItem(item);
-
-                              player.prepare();
-
-                              player.play();
-
-                              playerView.setVisibility(
-                                  View.VISIBLE
-                              );
-
-                          } catch (Exception e) {
-
-                              e.printStackTrace();
-                          }
+                          playerView.setVisibility(View.VISIBLE);
                       });
                   }
 
                   @JavascriptInterface
                   public void stop() {
-
                       runOnUiThread(() -> {
-
                           player.stop();
-
-                          playerView.setVisibility(
-                              View.GONE
-                          );
+                          playerView.setVisibility(View.GONE);
                       });
                   }
 
                   @JavascriptInterface
                   public void fullscreen() {
-
                       runOnUiThread(() -> {
-
-                          playerView.setVisibility(
-                              View.VISIBLE
-                          );
 
                           getWindow()
                               .getDecorView()
                               .setSystemUiVisibility(
-                                  View.SYSTEM_UI_FLAG_FULLSCREEN
-                                  |
-                                  View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                                  |
+                                  View.SYSTEM_UI_FLAG_FULLSCREEN |
+                                  View.SYSTEM_UI_FLAG_HIDE_NAVIGATION |
                                   View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
                               );
+
+                          playerView.setVisibility(View.VISIBLE);
                       });
                   }
-              }
-
-              @Override
-              public void onBackPressed() {
-
-                  if (playerView.getVisibility()
-                      == View.VISIBLE) {
-
-                      playerView.setVisibility(
-                          View.GONE
-                      );
-
-                      getWindow()
-                          .getDecorView()
-                          .setSystemUiVisibility(0);
-
-                      return;
-                  }
-
-                  super.onBackPressed();
               }
 
               @Override
@@ -407,7 +275,6 @@ jobs:
 
                   if (player != null) {
                       player.release();
-                      player = null;
                   }
 
                   if (webView != null) {
@@ -420,7 +287,6 @@ jobs:
           EOF
 
       - name: Connect HTML To ExoPlayer
-        shell: bash
         run: |
 
           python3 - <<'PY'
@@ -475,12 +341,11 @@ jobs:
 
           mkdir -p output
 
-          cp \
-          app/build/outputs/apk/release/app-release.apk \
+          cp app/build/outputs/apk/release/app-release.apk \
           "output/rebaz smart tv.apk"
 
-      - name: Upload REBAZ SMART TV
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: rebaz-smart-tv
+          name: REBAZ-SMART-TV
           path: "output/rebaz smart tv.apk"
