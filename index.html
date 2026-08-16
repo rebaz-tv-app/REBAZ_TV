@@ -42,7 +42,7 @@
     .footer { height: 40px; display: flex; align-items: center; justify-content: flex-end; gap: 25px; padding: 0 30px; font-size: 14px; color: #888; }
     .footer span { display: flex; align-items: center; gap: 5px; }
 
-    /* دۆخی فول سکرین بە پڕکردنەوەی ڕاستەقینەی شاشە */
+    /* دۆخی فول سکرین بە پڕکردنەوەی تەواوی شاشە بە بێ کێشە */
     body.fullscreen-mode .header,
     body.fullscreen-mode .categories,
     body.fullscreen-mode .channels,
@@ -55,10 +55,18 @@
       margin: 0 !important;
       height: 100vh !important;
       width: 100vw !important;
+      position: fixed !important;
+      top: 0 !important;
+      left: 0 !important;
+      z-index: 99997 !important;
     }
     body.fullscreen-mode .preview-section {
       width: 100vw !important;
       height: 100vh !important;
+      position: fixed !important;
+      top: 0 !important;
+      left: 0 !important;
+      z-index: 99998 !important;
     }
     body.fullscreen-mode .video-container {
       position: fixed !important;
@@ -136,6 +144,7 @@
     let hls = null;
     let activeChannelId = null;
     let currentCategory = 'all';
+    let lastFocusedChannelElement = null;
 
     function renderChannels() {
       channelListEl.innerHTML = '';
@@ -150,11 +159,11 @@
         item.tabIndex = 0;
         item.innerHTML = `<span>${ch.name}</span>`;
         
-        item.onclick = () => handleChannelAction(ch, item);
+        item.onclick = () => selectAndFullScreen(ch, item);
         item.onkeydown = (e) => {
-          if (e.key === 'Enter') {
+          if (e.key === 'Enter' || e.keyCode === 13) {
             e.preventDefault();
-            handleChannelAction(ch, item);
+            selectAndFullScreen(ch, item);
           }
         };
         channelListEl.appendChild(item);
@@ -169,21 +178,16 @@
         renderChannels();
       };
       catEl.onclick = selectCat;
-      catEl.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); selectCat(); } };
+      catEl.onkeydown = (e) => { if (e.key === 'Enter' || e.keyCode === 13) { e.preventDefault(); selectCat(); } };
     });
 
-    function handleChannelAction(channel, element) {
-      if (document.body.classList.contains('fullscreen-mode')) {
-        document.body.classList.remove('fullscreen-mode');
-        return;
-      }
-
-      if (activeChannelId === channel.id) {
-        document.body.classList.add('fullscreen-mode');
-        video.play();
-      } else {
-        playInPreview(channel, element);
-      }
+    function selectAndFullScreen(channel, element) {
+      lastFocusedChannelElement = element;
+      playInPreview(channel, element);
+      
+      // ڕاستەوخۆ دەبێتە فول سکرین کاتێک OK لەسەر کەناڵەکە دەگوشرێت
+      document.body.classList.add('fullscreen-mode');
+      video.play();
     }
 
     function playInPreview(channel, element) {
@@ -193,7 +197,6 @@
       document.querySelectorAll('.channel-item').forEach(el => el.classList.remove('active'));
       if (element) {
         element.classList.add('active');
-        element.focus();
       }
 
       if (Hls.isSupported()) {
@@ -210,12 +213,18 @@
       }
     }
 
+    // گەڕانەوە بۆ دۆخی ئاسایی لە فول سکرین بە OK یان Back
     window.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === 'Escape' || e.key === 'Backspace' || e.keyCode === 13 || e.keyCode === 27 || e.keyCode === 8 || e.keyCode === 461) {
         if (document.body.classList.contains('fullscreen-mode')) {
           e.preventDefault();
           e.stopPropagation();
           document.body.classList.remove('fullscreen-mode');
+          
+          // گەڕاندنەوەی فوکس بۆ سەر کەناڵەکە
+          if (lastFocusedChannelElement) {
+            lastFocusedChannelElement.focus();
+          }
         }
       }
     });
