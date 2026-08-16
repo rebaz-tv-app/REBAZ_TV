@@ -23,17 +23,17 @@
     /* Main Area (ناوەڕاست) */
     .main-content { flex: 1; display: flex; padding: 20px; gap: 20px; height: calc(100vh - 100px); }
 
-    /* ١. بەشی ڕاست: پاکێجەکان (Categories) */
+    /* ١. بەشی ڕاست: پاکێجەکان */
     .categories { width: 220px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; }
     .cat-item { padding: 15px; background: #161c33; border: 1px solid #2a345c; border-radius: 8px; cursor: pointer; text-align: right; color: #ccc; transition: 0.2s; outline: none; }
     .cat-item.active, .cat-item:focus { background: #1f2747; border-color: #ffde03; color: #ffde03; font-weight: bold; }
 
-    /* ٢. بەشی ناوەڕاست: کەناڵەکان (Channels) */
+    /* ٢. بەشی ناوەڕاست: کەناڵەکان */
     .channels { width: 280px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; }
     .channel-item { display: flex; align-items: center; justify-content: flex-start; gap: 15px; padding: 12px 15px; background: #161c33; border: 1px solid #2a345c; border-radius: 8px; cursor: pointer; transition: 0.2s; outline: none; }
     .channel-item.active, .channel-item:focus { background: #1f2747; border-color: #ffde03; color: #ffde03; }
     
-    /* ٣. بەشی چەپ: شاشەی پریڤیو (Video Preview) */
+    /* ٣. بەشی چەپ: شاشەی پریڤیو */
     .preview-section { flex: 1; display: flex; flex-direction: column; }
     .video-container { width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 12px; overflow: hidden; position: relative; border: 2px solid transparent; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
     .video-container video { width: 100%; height: 100%; object-fit: contain; }
@@ -41,8 +41,32 @@
 
     /* Footer (خوارەوە) */
     .footer { height: 40px; display: flex; align-items: center; justify-content: flex-end; gap: 25px; padding: 0 30px; font-size: 14px; color: #888; }
-    .footer span { display: flex; align-items: center; gap: 5px; cursor: pointer; }
-    .footer span:hover { color: #ffde03; }
+    .footer span { display: flex; align-items: center; gap: 5px; }
+
+    /* دۆخی فول سکرین (شاراردنەوەی هەموو شتێک) */
+    body.fullscreen-mode .header,
+    body.fullscreen-mode .categories,
+    body.fullscreen-mode .channels,
+    body.fullscreen-mode .footer,
+    body.fullscreen-mode .channel-title {
+      display: none !important;
+    }
+    body.fullscreen-mode .main-content {
+      padding: 0 !important;
+      margin: 0 !important;
+      height: 100vh !important;
+      width: 100vw !important;
+    }
+    body.fullscreen-mode .preview-section {
+      width: 100vw !important;
+      height: 100vh !important;
+    }
+    body.fullscreen-mode .video-container {
+      width: 100vw !important;
+      height: 100vh !important;
+      border-radius: 0 !important;
+      border: none !important;
+    }
 
     /* Scrollbar Styling */
     ::-webkit-scrollbar { width: 6px; }
@@ -54,7 +78,6 @@
 
   <div class="header">
     <div class="logo">REBAZ TV ‹</div>
-    
     <div class="header-left">
       <div class="header-icons">
         <span>⚙️</span>
@@ -78,8 +101,7 @@
       <div class="cat-item" tabindex="0" data-cat="doc">دۆکیۆمێنتاری</div>
     </div>
 
-    <div class="channels" id="channelList">
-      </div>
+    <div class="channels" id="channelList"></div>
 
     <div class="preview-section">
       <div class="video-container" id="videoContainer">
@@ -91,7 +113,7 @@
   </div>
 
   <div class="footer">
-    <span id="externalPlayBtn">▷ پەخشی دەرەکی</span>
+    <span>▷ پەخشی دەرەکی</span>
     <span>🕒 لە ئەرشیف</span>
     <span>♡ دڵخوازەکان</span>
   </div>
@@ -106,12 +128,12 @@
     ];
 
     const video = document.getElementById('videoPlayer');
+    const videoContainer = document.getElementById('videoContainer');
     const channelListEl = document.getElementById('channelList');
     const currentChannelTitle = document.getElementById('currentChannelTitle');
-    const externalPlayBtn = document.getElementById('externalPlayBtn');
     
     let hls = null;
-    let activeChannel = null;
+    let activeChannelId = null;
     let currentCategory = 'all';
 
     function renderChannels() {
@@ -123,20 +145,15 @@
 
       filtered.forEach(ch => {
         const item = document.createElement('div');
-        item.className = `channel-item ${activeChannel && ch.id === activeChannel.id ? 'active' : ''}`;
+        item.className = `channel-item ${ch.id === activeChannelId ? 'active' : ''}`;
         item.tabIndex = 0;
         item.innerHTML = `<span>${ch.name}</span>`;
         
-        item.onclick = () => handleChannelSelect(ch, item);
+        item.onclick = () => handleChannelAction(ch, item);
         item.onkeydown = (e) => {
           if (e.key === 'Enter') {
             e.preventDefault();
-            // ئەگەر دووەم جار لەسەر هەمان کەناڵ OK داگیرا، ڕاستەوخۆ دەچێتە پلەری دەرەکی
-            if (activeChannel && activeChannel.id === ch.id) {
-              openExternalPlayer();
-            } else {
-              handleChannelSelect(ch, item);
-            }
+            handleChannelAction(ch, item);
           }
         };
         channelListEl.appendChild(item);
@@ -154,8 +171,18 @@
       catEl.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); selectCat(); } };
     });
 
-    function handleChannelSelect(channel, element) {
-      activeChannel = channel;
+    function handleChannelAction(channel, element) {
+      if (activeChannelId === channel.id) {
+        // ئەگەر کەناڵەکە پێشتر هەڵبژاردراوە و دووبارە OK کرا, دەبێتە فول سکرین و هەموو شتێک دەشاردرێتەوە
+        makeFullScreen();
+      } else {
+        // ئەگەر کەناڵێکی نوێ بوو، تەنها لە پریڤیوەکە لێیدەدات
+        playInPreview(channel, element);
+      }
+    }
+
+    function playInPreview(channel, element) {
+      activeChannelId = channel.id;
       currentChannelTitle.textContent = channel.name;
       
       document.querySelectorAll('.channel-item').forEach(el => el.classList.remove('active'));
@@ -164,11 +191,8 @@
         element.focus();
       }
 
-      // لێدان لە شاشەی پریڤیو (بێ کێشە)
       if (Hls.isSupported()) {
-        if (hls) {
-          hls.destroy();
-        }
+        if (hls) hls.destroy();
         hls = new Hls({ maxBufferLength: 30 });
         hls.loadSource(channel.url);
         hls.attachMedia(video);
@@ -181,42 +205,26 @@
       }
     }
 
-    // کردنەوەی پلەری دەرەکی (VLC/Exo) بە بێ کێشەی دەبڵ شاشە
-    function openExternalPlayer() {
-      if (!activeChannel) return;
-
-      // ١. کوژاندنەوە و لەناوبردنی تەواوی ڤیدیۆی پریڤیو لە وێبەکەدا
-      if (hls) {
-        hls.destroy();
-        hls = null;
+    function makeFullScreen() {
+      document.body.classList.add('fullscreen-mode');
+      if (videoContainer.requestFullscreen) {
+        videoContainer.requestFullscreen();
+      } else if (videoContainer.webkitRequestFullscreen) {
+        videoContainer.webkitRequestFullscreen();
       }
-      video.pause();
-      video.removeAttribute('src');
-      video.load();
-
-      // ٢. بانگکردنی پلەری دەرەکی ئەپەکە
-      if (window.AndroidBridge && window.AndroidBridge.playInExo) {
-        window.AndroidBridge.playInExo(activeChannel.url, activeChannel.name);
-      } else {
-        console.log("External Player triggered for:", activeChannel.url);
-      }
+      video.play();
     }
 
-    // بەستنەوەی دوگمەی پەخشی دەرەکی لە فوتەر
-    externalPlayBtn.onclick = openExternalPlayer;
-    externalPlayBtn.tabIndex = 0;
-    externalPlayBtn.onkeydown = (e) => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        openExternalPlayer();
+    // کاتێک بە دوگمەی Back یان Esc دەگەڕێیتەوە، دۆخی فول سکرین لادەبرێت و لیستەکان دەگەڕێنەوە
+    document.addEventListener('fullscreenchange', () => {
+      if (!document.fullscreenElement) {
+        document.body.classList.remove('fullscreen-mode');
       }
-    };
+    });
 
-    // کارپێکردنی یەکەم کەناڵ لە پریڤیو لە سەرەتادا
-    if (channels.length > 0) {
-      renderChannels();
-      handleChannelSelect(channels[0], document.querySelector('.channel-item'));
-    }
+    // کارپێکردنی یەکەم کەناڵ لە سەرەتادا
+    renderChannels();
+    playInPreview(channels[0], document.querySelector('.channel-item'));
   </script>
 </body>
 </html>
