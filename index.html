@@ -4,14 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>REBAZ TV</title>
-  <script src="https://cdn.jsdelivr.net/npm/hls.js@1.3.5/dist/hls.light.min.js"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@300;400;700&display=swap');
     
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Noto Sans Arabic', sans-serif; }
     body { background-color: #0b1021; color: #fff; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
     
-    /* Header (سەرەوە) */
+    /* Header (سەرەوە) - ڕێک وەک وێنە کۆنەکە */
     .header { height: 60px; display: flex; align-items: center; justify-content: space-between; padding: 0 30px; background: linear-gradient(to bottom, #111832, #0b1021); }
     .logo { font-size: 24px; font-weight: bold; letter-spacing: 1px; color: #fff; }
     .search-box { background: #1f2747; border-radius: 20px; padding: 6px 15px; display: flex; align-items: center; width: 180px; border: 1px solid #2a345c; }
@@ -21,20 +20,21 @@
     /* Main Area (ناوەڕاست) */
     .main-content { flex: 1; display: flex; padding: 20px; gap: 20px; height: calc(100vh - 100px); }
 
-    /* بەشی ڕاست: پاکێجەکان */
+    /* ١. بەشی ڕاست: پاکێجەکان (Categories) */
     .categories { width: 220px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; }
     .cat-item { padding: 15px; background: #161c33; border: 1px solid #2a345c; border-radius: 8px; cursor: pointer; text-align: right; color: #ccc; transition: 0.2s; outline: none; }
     .cat-item.active, .cat-item:focus { background: #1f2747; border-color: #ffde03; color: #ffde03; font-weight: bold; }
 
-    /* بەشی ناوەڕاست: کەناڵەکان */
+    /* ٢. بەشی ناوەڕاست: کەناڵەکان (Channels) */
     .channels { width: 280px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; }
     .channel-item { display: flex; align-items: center; justify-content: flex-start; gap: 15px; padding: 12px 15px; background: #161c33; border: 1px solid #2a345c; border-radius: 8px; cursor: pointer; transition: 0.2s; outline: none; }
     .channel-item.active, .channel-item:focus { background: #1f2747; border-color: #ffde03; color: #ffde03; }
     
-    /* بەشی چەپ: شاشە بچووکەکە */
+    /* ٣. بەشی چەپ: شاشە بچووکەکە (Preview Box) بێ کێشەی دەبڵ شاشە */
     .preview-section { flex: 1; display: flex; flex-direction: column; }
-    .video-container { width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 12px; overflow: hidden; position: relative; border: 2px solid transparent; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-    .video-container video { width: 100%; height: 100%; object-fit: contain; }
+    .video-container { width: 100%; aspect-ratio: 16/9; background: #111832; border-radius: 12px; overflow: hidden; position: relative; border: 2px solid #2a345c; box-shadow: 0 10px 30px rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 15px; }
+    .preview-icon { font-size: 50px; }
+    .preview-text { font-size: 16px; color: #ffde03; font-weight: bold; }
     .channel-title { font-size: 28px; font-weight: bold; margin-top: 20px; text-align: right; }
 
     /* Footer (خوارەوە) */
@@ -73,7 +73,8 @@
 
     <div class="preview-section">
       <div class="video-container" id="videoContainer">
-        <video id="videoPlayer" autoplay></video>
+        <div class="preview-icon">📺</div>
+        <div class="preview-text" id="previewMsg">دوگمەی OK داگرە بۆ لێدانی کەناڵ</div>
       </div>
       <div class="channel-title" id="currentChannelTitle">ناوی کەناڵ</div>
     </div>
@@ -95,11 +96,10 @@
       { id: 5, name: "Reng Documentary", cat: "doc", url: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8" }
     ];
 
-    const video = document.getElementById('videoPlayer');
     const channelListEl = document.getElementById('channelList');
     const currentChannelTitle = document.getElementById('currentChannelTitle');
+    const previewMsg = document.getElementById('previewMsg');
     
-    let hls = null;
     let activeChannelId = null;
     let currentCategory = 'all';
 
@@ -139,74 +139,33 @@
     });
 
     function handleChannelClick(channel, element) {
-      if (activeChannelId === channel.id) {
-        goFullScreenNative(channel);
-      } else {
-        playInPreview(channel, element);
-      }
-    }
-
-    function playInPreview(channel, element) {
       activeChannelId = channel.id;
       currentChannelTitle.textContent = channel.name;
-      
+      previewMsg.textContent = "لێدان لە پلەری دەرەکی...";
+
       document.querySelectorAll('.channel-item').forEach(el => el.classList.remove('active'));
       if (element) {
         element.classList.add('active');
         element.focus();
       }
 
-      if (Hls.isSupported()) {
-        if (hls) {
-            hls.destroy();
-        }
-        hls = new Hls({ maxBufferLength: 30 });
-        hls.loadSource(channel.url);
-        hls.attachMedia(video);
-        hls.on(Hls.Events.MANIFEST_PARSED, () => {
-            video.play().catch(e => console.log(e));
-        });
-      } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-        video.src = channel.url;
-        video.play();
-      }
-    }
-
-    // چارەسەری بنەڕەتی بۆ کێشەی دەبڵ شاشە
-    function goFullScreenNative(channel) {
+      // ڕاستەوخۆ کردنەوەی پلەری دەرەکی (VLC / ExoPlayer) بێ کێشەی دەبڵ شاشە
       if (window.AndroidBridge && window.AndroidBridge.playInExo) {
-        
-        // 1. لەناوبردنی پلەیەری وێب بە تەواوی
-        if (hls) {
-            hls.destroy();
-            hls = null;
-        }
-        video.pause();
-        video.removeAttribute('src'); // سڕینەوەی سۆرسەکەی بۆ دڵنیایی
-        video.load(); 
-
-        // 2. کردنەوەی ئەپە ئەندرۆیدەکە بێ کێشە
         window.AndroidBridge.playInExo(channel.url, channel.name);
       } else {
-        if (video.requestFullscreen) video.requestFullscreen();
+        // بۆ تاقیکردنەوە لەسەر کۆمپیوتەر
+        console.log("Playing:", channel.url);
       }
     }
-
-    // کاتێک لە پلەیەری ئەندرۆیدەکە بە دوگمەی (گەڕانەوە - Back) دەگەڕێیتەوە
-    // ڤیدیۆکە سەرلەنوێ لۆد دەکەینەوە بۆ شاشە بچووکەکە
-    document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible' && activeChannelId) {
-         const currentCh = channels.find(c => c.id === activeChannelId);
-         if (currentCh) {
-             const activeItem = document.querySelector('.channel-item.active');
-             playInPreview(currentCh, activeItem);
-         }
-      }
-    });
 
     // کارپێکردنی یەکەم کەناڵ لە سەرەتادا
     renderChannels();
-    playInPreview(channels[0], document.querySelector('.channel-item'));
+    // دیاریكردنی ناوی کەناڵی یەکەم بێ لێدانی ڤیدیۆی ناو وێب
+    if(channels.length > 0) {
+      currentChannelTitle.textContent = channels[0].name;
+      activeChannelId = channels[0].id;
+      renderChannels();
+    }
   </script>
 </body>
 </html>
