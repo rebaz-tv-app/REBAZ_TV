@@ -11,11 +11,10 @@
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Noto Sans Arabic', sans-serif; }
     body { background-color: #0b1021; color: #fff; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
     
-    /* Header (سەرەوە) */
+    /* Header (سەرەوە) - بێ ئایکۆنە زیادەکان */
     .header { height: 60px; display: flex; align-items: center; justify-content: space-between; padding: 0 30px; background: linear-gradient(to bottom, #111832, #0b1021); }
     .logo { font-size: 24px; font-weight: bold; letter-spacing: 1px; color: #fff; }
     .header-left { display: flex; align-items: center; gap: 15px; }
-    .header-icons { display: flex; gap: 10px; font-size: 18px; cursor: pointer; opacity: 0.8; }
     .search-box { background: #1f2747; border-radius: 20px; padding: 6px 15px; display: flex; align-items: center; width: 220px; border: 1px solid #2a345c; }
     .search-box input { background: transparent; border: none; color: #fff; width: 100%; outline: none; margin-right: 8px; text-align: right; font-size: 14px; }
     .search-box span { font-size: 14px; opacity: 0.7; }
@@ -23,15 +22,15 @@
     /* Main Area (ناوەڕاست) */
     .main-content { flex: 1; display: flex; padding: 20px; gap: 20px; height: calc(100vh - 100px); }
 
-    /* ١. بەشی ڕاست: پاکێجەکان */
+    /* ١. بەشی ڕاست: پاکێجەکان (پڕبوونی ڕەنگ لە کاتی فوکس و اکتیڤدا) */
     .categories { width: 220px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; }
     .cat-item { padding: 15px; background: #161c33; border: 1px solid #2a345c; border-radius: 8px; cursor: pointer; text-align: right; color: #ccc; transition: 0.2s; outline: none; }
-    .cat-item.active, .cat-item:focus { background: #1f2747; border-color: #ffde03; color: #ffde03; font-weight: bold; }
+    .cat-item.active, .cat-item:focus { background: #ffde03 !important; color: #0b1021 !important; font-weight: bold; border-color: #ffde03; }
 
-    /* ٢. بەشی ناوەڕاست: کەناڵەکان */
+    /* ٢. بەشی ناوەڕاست: کەناڵەکان (پڕبوونی ڕەنگ لە کاتی فوکس و اکتیڤدا) */
     .channels { width: 280px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; }
     .channel-item { display: flex; align-items: center; justify-content: flex-start; gap: 15px; padding: 12px 15px; background: #161c33; border: 1px solid #2a345c; border-radius: 8px; cursor: pointer; transition: 0.2s; outline: none; }
-    .channel-item.active, .channel-item:focus { background: #1f2747; border-color: #ffde03; color: #ffde03; }
+    .channel-item.active, .channel-item:focus { background: #ffde03 !important; color: #0b1021 !important; font-weight: bold; border-color: #ffde03; }
     
     /* ٣. بەشی چەپ: شاشەی پریڤیو */
     .preview-section { flex: 1; display: flex; flex-direction: column; }
@@ -43,7 +42,7 @@
     .footer { height: 40px; display: flex; align-items: center; justify-content: flex-end; gap: 25px; padding: 0 30px; font-size: 14px; color: #888; }
     .footer span { display: flex; align-items: center; gap: 5px; }
 
-    /* دۆخی فول سکرین بە CSS (کە زۆر سەلامەتە بۆ ئەندرۆید تیڤی) */
+    /* دۆخی فول سکرین بە CSS بۆ سەلامەتی تیڤی */
     body.fullscreen-mode .header,
     body.fullscreen-mode .categories,
     body.fullscreen-mode .channels,
@@ -83,11 +82,6 @@
   <div class="header">
     <div class="logo">REBAZ TV ‹</div>
     <div class="header-left">
-      <div class="header-icons">
-        <span>⚙️</span>
-        <span>🎬</span>
-        <span>📺</span>
-      </div>
       <div class="search-box">
         <input type="text" placeholder="گەڕان...">
         <span>🔍</span>
@@ -178,8 +172,16 @@
     });
 
     function handleChannelAction(channel, element) {
+      // ئەگەر لە فول سکریندابین، بە OK دێینە دەرەوە
+      if (document.body.classList.contains('fullscreen-mode')) {
+        document.body.classList.remove('fullscreen-mode');
+        return;
+      }
+
       if (activeChannelId === channel.id) {
-        makeFullScreen();
+        // ئەگەر کەناڵەکە هەڵبژێردراوە و دووبارە OK کراوە، دەبێتە فول سکرین
+        document.body.classList.add('fullscreen-mode');
+        video.play();
       } else {
         playInPreview(channel, element);
       }
@@ -209,21 +211,12 @@
       }
     }
 
-    function makeFullScreen() {
-      // چوونە دۆخی فول سکرین بە CSS بێ ئەوەی باڕووزەرەکە تێکبچێت
-      document.body.classList.add('fullscreen-mode');
-      video.play();
-    }
-
-    // کۆنتڕۆڵکردنی دوگمەی Back لەسەر کۆنتڕۆڵی تیڤی (keyCode 461 یان Escape)
+    // کۆنتڕۆڵی دوگمەی OK و Back لەسەر تیڤی
     window.addEventListener('keydown', (e) => {
-      // 461 کۆدی تایبەتی دوگمەی Backـە لەسەر زۆربەی کۆنتڕۆڵی ئەندرۆید تیڤی
-      if (e.key === 'Escape' || e.key === 'Backspace' || e.keyCode === 27 || e.keyCode === 8 || e.keyCode === 461) {
+      if (e.key === 'Enter' || e.key === 'Escape' || e.key === 'Backspace' || e.keyCode === 13 || e.keyCode === 27 || e.keyCode === 8 || e.keyCode === 461) {
         if (document.body.classList.contains('fullscreen-mode')) {
           e.preventDefault();
           e.stopPropagation();
-
-          // لابردنی دۆخی فول سکرین و گەڕاندنەوەی لیستەکان
           document.body.classList.remove('fullscreen-mode');
         }
       }
