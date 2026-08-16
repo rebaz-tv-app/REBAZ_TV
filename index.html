@@ -11,7 +11,7 @@
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Noto Sans Arabic', sans-serif; }
     body { background-color: #0b1021; color: #fff; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
     
-    /* Header (سەرەوە) - بێ ئایکۆنە زیادەکان */
+    /* Header (سەرەوە) */
     .header { height: 60px; display: flex; align-items: center; justify-content: space-between; padding: 0 30px; background: linear-gradient(to bottom, #111832, #0b1021); }
     .logo { font-size: 24px; font-weight: bold; letter-spacing: 1px; color: #fff; }
     .header-left { display: flex; align-items: center; gap: 15px; }
@@ -22,12 +22,12 @@
     /* Main Area (ناوەڕاست) */
     .main-content { flex: 1; display: flex; padding: 20px; gap: 20px; height: calc(100vh - 100px); }
 
-    /* ١. بەشی ڕاست: پاکێجەکان (پڕبوونی ڕەنگ لە کاتی فوکس و اکتیڤدا) */
+    /* ١. بەشی ڕاست: پاکێجەکان */
     .categories { width: 220px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; }
     .cat-item { padding: 15px; background: #161c33; border: 1px solid #2a345c; border-radius: 8px; cursor: pointer; text-align: right; color: #ccc; transition: 0.2s; outline: none; }
     .cat-item.active, .cat-item:focus { background: #ffde03 !important; color: #0b1021 !important; font-weight: bold; border-color: #ffde03; }
 
-    /* ٢. بەشی ناوەڕاست: کەناڵەکان (پڕبوونی ڕەنگ لە کاتی فوکس و اکتیڤدا) */
+    /* ٢. بەشی ناوەڕاست: کەناڵەکان */
     .channels { width: 280px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; }
     .channel-item { display: flex; align-items: center; justify-content: flex-start; gap: 15px; padding: 12px 15px; background: #161c33; border: 1px solid #2a345c; border-radius: 8px; cursor: pointer; transition: 0.2s; outline: none; }
     .channel-item.active, .channel-item:focus { background: #ffde03 !important; color: #0b1021 !important; font-weight: bold; border-color: #ffde03; }
@@ -42,7 +42,7 @@
     .footer { height: 40px; display: flex; align-items: center; justify-content: flex-end; gap: 25px; padding: 0 30px; font-size: 14px; color: #888; }
     .footer span { display: flex; align-items: center; gap: 5px; }
 
-    /* دۆخی فول سکرین بە CSS بۆ سەلامەتی تیڤی */
+    /* دۆخی فول سکرین بە پڕکردنەوەی ڕاستەقینەی شاشە */
     body.fullscreen-mode .header,
     body.fullscreen-mode .categories,
     body.fullscreen-mode .channels,
@@ -66,6 +66,7 @@
       left: 0 !important;
       width: 100vw !important;
       height: 100vh !important;
+      aspect-ratio: unset !important;
       z-index: 99999 !important;
       border-radius: 0 !important;
       border: none !important;
@@ -172,14 +173,12 @@
     });
 
     function handleChannelAction(channel, element) {
-      // ئەگەر لە فول سکریندابین، بە OK دێینە دەرەوە
       if (document.body.classList.contains('fullscreen-mode')) {
         document.body.classList.remove('fullscreen-mode');
         return;
       }
 
       if (activeChannelId === channel.id) {
-        // ئەگەر کەناڵەکە هەڵبژێردراوە و دووبارە OK کراوە، دەبێتە فول سکرین
         document.body.classList.add('fullscreen-mode');
         video.play();
       } else {
@@ -211,7 +210,6 @@
       }
     }
 
-    // کۆنتڕۆڵی دوگمەی OK و Back لەسەر تیڤی
     window.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === 'Escape' || e.key === 'Backspace' || e.keyCode === 13 || e.keyCode === 27 || e.keyCode === 8 || e.keyCode === 461) {
         if (document.body.classList.contains('fullscreen-mode')) {
@@ -222,7 +220,6 @@
       }
     });
 
-    // کارپێکردنی یەکەم کەناڵ لە سەرەتادا
     renderChannels();
     playInPreview(channels[0], document.querySelector('.channel-item'));
   </script>
