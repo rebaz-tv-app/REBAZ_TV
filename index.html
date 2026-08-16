@@ -173,10 +173,8 @@
 
     function handleChannelAction(channel, element) {
       if (activeChannelId === channel.id) {
-        // ئەگەر کەناڵەکە پێشتر هەڵبژاردراوە و دووبارە OK کرا, دەبێتە فول سکرین و هەموو شتێک دەشاردرێتەوە
         makeFullScreen();
       } else {
-        // ئەگەر کەناڵێکی نوێ بوو، تەنها لە پریڤیوەکە لێیدەدات
         playInPreview(channel, element);
       }
     }
@@ -215,7 +213,28 @@
       video.play();
     }
 
-    // کاتێک بە دوگمەی Back یان Esc دەگەڕێیتەوە، دۆخی فول سکرین لادەبرێت و لیستەکان دەگەڕێنەوە
+    // چارەسەری گرنگ بۆ دوگمەی Back لە تیڤی و کۆمپیوتەر
+    window.addEventListener('keydown', (e) => {
+      // ئەگەر دوگمەی Backspace، Escape یان کلیلەکانی تری گەڕانەوە داگیرا و لە دۆخی فول سکریندا بووین
+      if (e.key === 'Escape' || e.key === 'Backspace' || e.keyCode === 8 || e.keyCode === 27 || e.keyCode === 461) {
+        if (document.body.classList.contains('fullscreen-mode')) {
+          e.preventDefault(); // ڕێگری لە داخستنی بەرنامەکە دەکات
+          e.stopPropagation();
+
+          // دەرچوون لە فول سکرین
+          if (document.exitFullscreen) {
+            document.exitFullscreen().catch(err => console.log(err));
+          } else if (document.webkitExitFullscreen) {
+            document.webkitExitFullscreen();
+          }
+
+          // لابردنی دۆخی فول سکرین و گەڕاندنەوەی پاکێج و کەناڵەکان
+          document.body.classList.remove('fullscreen-mode');
+        }
+      }
+    });
+
+    // چاودێریکردنی دۆخی فول سکرین بۆ دڵنیابوون لە گەڕانەوە
     document.addEventListener('fullscreenchange', () => {
       if (!document.fullscreenElement) {
         document.body.classList.remove('fullscreen-mode');
