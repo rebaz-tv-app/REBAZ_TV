@@ -11,7 +11,7 @@
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Noto Sans Arabic', sans-serif; }
     body { background-color: #0b1021; color: #fff; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
     
-    /* Header (سەرەوە) - ڕێک وەک وێنە کۆنەکە */
+    /* Header (سەرەوە) */
     .header { height: 60px; display: flex; align-items: center; justify-content: space-between; padding: 0 30px; background: linear-gradient(to bottom, #111832, #0b1021); }
     .logo { font-size: 24px; font-weight: bold; letter-spacing: 1px; color: #fff; }
     .header-left { display: flex; align-items: center; gap: 15px; }
@@ -43,7 +43,7 @@
     .footer { height: 40px; display: flex; align-items: center; justify-content: flex-end; gap: 25px; padding: 0 30px; font-size: 14px; color: #888; }
     .footer span { display: flex; align-items: center; gap: 5px; }
 
-    /* دۆخی فول سکرین (شاراردنەوەی هەموو شتێک) */
+    /* دۆخی فول سکرین بە CSS (کە زۆر سەلامەتە بۆ ئەندرۆید تیڤی) */
     body.fullscreen-mode .header,
     body.fullscreen-mode .categories,
     body.fullscreen-mode .channels,
@@ -62,8 +62,12 @@
       height: 100vh !important;
     }
     body.fullscreen-mode .video-container {
+      position: fixed !important;
+      top: 0 !important;
+      left: 0 !important;
       width: 100vw !important;
       height: 100vh !important;
+      z-index: 99999 !important;
       border-radius: 0 !important;
       border: none !important;
     }
@@ -93,6 +97,7 @@
 
   <div class="main-content">
     
+    <!-- پاکێجەکان (لای ڕاست) -->
     <div class="categories" id="categoryList">
       <div class="cat-item active" tabindex="0" data-cat="all">هەموو کەناڵەکان</div>
       <div class="cat-item" tabindex="0" data-cat="news">هەواڵ</div>
@@ -101,8 +106,10 @@
       <div class="cat-item" tabindex="0" data-cat="doc">دۆکیۆمێنتاری</div>
     </div>
 
+    <!-- کەناڵەکان (ناوەڕاست) -->
     <div class="channels" id="channelList"></div>
 
+    <!-- شاشەی پریڤیو و فول سکرین (لای چەپ) -->
     <div class="preview-section">
       <div class="video-container" id="videoContainer">
         <video id="videoPlayer" autoplay></video>
@@ -128,7 +135,6 @@
     ];
 
     const video = document.getElementById('videoPlayer');
-    const videoContainer = document.getElementById('videoContainer');
     const channelListEl = document.getElementById('channelList');
     const currentChannelTitle = document.getElementById('currentChannelTitle');
     
@@ -204,40 +210,22 @@
     }
 
     function makeFullScreen() {
+      // چوونە دۆخی فول سکرین بە CSS بێ ئەوەی باڕووزەرەکە تێکبچێت
       document.body.classList.add('fullscreen-mode');
-      if (videoContainer.requestFullscreen) {
-        videoContainer.requestFullscreen();
-      } else if (videoContainer.webkitRequestFullscreen) {
-        videoContainer.webkitRequestFullscreen();
-      }
       video.play();
     }
 
-    // چارەسەری گرنگ بۆ دوگمەی Back لە تیڤی و کۆمپیوتەر
+    // کۆنتڕۆڵکردنی دوگمەی Back لەسەر کۆنتڕۆڵی تیڤی (keyCode 461 یان Escape)
     window.addEventListener('keydown', (e) => {
-      // ئەگەر دوگمەی Backspace، Escape یان کلیلەکانی تری گەڕانەوە داگیرا و لە دۆخی فول سکریندا بووین
-      if (e.key === 'Escape' || e.key === 'Backspace' || e.keyCode === 8 || e.keyCode === 27 || e.keyCode === 461) {
+      // 461 کۆدی تایبەتی دوگمەی Backـە لەسەر زۆربەی کۆنتڕۆڵی ئەندرۆید تیڤی
+      if (e.key === 'Escape' || e.key === 'Backspace' || e.keyCode === 27 || e.keyCode === 8 || e.keyCode === 461) {
         if (document.body.classList.contains('fullscreen-mode')) {
-          e.preventDefault(); // ڕێگری لە داخستنی بەرنامەکە دەکات
+          e.preventDefault();
           e.stopPropagation();
 
-          // دەرچوون لە فول سکرین
-          if (document.exitFullscreen) {
-            document.exitFullscreen().catch(err => console.log(err));
-          } else if (document.webkitExitFullscreen) {
-            document.webkitExitFullscreen();
-          }
-
-          // لابردنی دۆخی فول سکرین و گەڕاندنەوەی پاکێج و کەناڵەکان
+          // لابردنی دۆخی فول سکرین و گەڕاندنەوەی لیستەکان
           document.body.classList.remove('fullscreen-mode');
         }
-      }
-    });
-
-    // چاودێریکردنی دۆخی فول سکرین بۆ دڵنیابوون لە گەڕانەوە
-    document.addEventListener('fullscreenchange', () => {
-      if (!document.fullscreenElement) {
-        document.body.classList.remove('fullscreen-mode');
       }
     });
 
