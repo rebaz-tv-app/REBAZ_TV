@@ -43,10 +43,6 @@
     }
 
     video { width: 100%; height: 100%; object-fit: contain; outline: none; }
-    
-    /* نامەیەکی بچووک کاتێک پلەیەری ناوەکی کاردەکات */
-    .native-playing-msg { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #000; color: #ffde03; align-items: center; justify-content: center; font-size: 18px; font-weight: bold; }
-    
     .current-title { font-size: 22px; font-weight: bold; margin-top: 15px; color: #fff; }
     .player-controls-bottom { display: flex; gap: 20px; margin-top: 15px; color: #aaa; font-size: 14px; cursor: pointer; }
     .player-controls-bottom span:hover { color: #ffde03; }
@@ -78,7 +74,6 @@
     <div class="player-section">
       <div class="video-wrapper" id="videoWrapper">
         <video id="video" controls autoplay></video>
-        <div class="native-playing-msg" id="nativeMsg">Playing in Native TV Player...</div>
       </div>
       <div class="current-title" id="activeTitle">1. Demo live 3</div>
       <div class="player-controls-bottom">
@@ -97,7 +92,6 @@
 
     const video = document.getElementById('video');
     const videoWrapper = document.getElementById('videoWrapper');
-    const nativeMsg = document.getElementById('nativeMsg');
     const channelListEl = document.getElementById('channelList');
     const activeTitleEl = document.getElementById('activeTitle');
     const favBtn = document.getElementById('favBtn');
@@ -130,8 +124,14 @@
         const item = document.createElement('div');
         item.className = `channel-item ${ch.id === activeChannelId ? 'active' : ''}`;
         item.tabIndex = 0;
+        
         item.onclick = () => handleChannelSelection(ch, item);
-        item.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); handleChannelSelection(ch, item); } };
+        item.onkeydown = (e) => { 
+            if (e.key === 'Enter') { 
+                e.preventDefault(); 
+                handleChannelSelection(ch, item); 
+            } 
+        };
         item.innerHTML = `<span class="channel-num">${ch.id}</span><span class="channel-icon"></span><span>${ch.name}</span>`;
         channelListEl.appendChild(item);
       });
@@ -151,12 +151,19 @@
 
     function handleChannelSelection(channel, element) {
       if (activeChannelId === channel.id) {
-        // ئەگەر پلەیەری ئەندرۆید کار نەکات و هێشتا لەسەر وێب بێت، ئینجا فول سکرین بکات
-        if (!window.AndroidBridge) {
-           if (videoWrapper.classList.contains('fullscreen-mode')) exitFullScreen();
-           else enterFullScreen();
+        // ئەگەر دوگمەی OK داگیرا لەسەر هەمان کەناڵ:
+        // ئەگەر ئەپەکە پشتگیری VLC بکات، با ڤیدیۆی وێبەکە بوەستێت و ئەوەی ئەپەکە بکاتەوە
+        if (window.AndroidBridge && window.AndroidBridge.playInExo) {
+            video.pause();
+            window.AndroidBridge.playInExo(channel.url, channel.name);
+        } else {
+            // ئەگەر لەسەر براوزەری ئاسایی بوو نەک ئەپەکە، با تەنها گەورەی بکات
+            if (!videoWrapper.classList.contains('fullscreen-mode')) {
+                enterFullScreen();
+            }
         }
       } else {
+        // ئەگەر کەناڵێکی نوێ بوو، لە شاشە بچووکەکە لێی بدە
         playChannel(channel, element);
       }
     }
@@ -168,6 +175,7 @@
         if (activeItem) activeItem.focus();
       }
     }
+
     function exitFullScreen() {
       if (videoWrapper.classList.contains('fullscreen-mode')) {
         videoWrapper.classList.remove('fullscreen-mode');
@@ -175,13 +183,14 @@
         if (activeItem) activeItem.focus();
       }
     }
-    videoWrapper.onclick = () => { if (videoWrapper.classList.contains('fullscreen-mode')) exitFullScreen(); };
+
+    // کۆنترۆڵکردنی دوگمەی گەڕانەوە (Back) بۆ چوونەدەرەوە لە فول سکرین
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.keyCode === 13) {
+      // 4 = ئەندرۆید Back, 27 = Escape, 10009 = Tizen/WebOS Back, 8 = Backspace
+      if (e.key === 'Escape' || e.keyCode === 27 || e.keyCode === 4 || e.keyCode === 10009 || e.keyCode === 8) {
         if (videoWrapper.classList.contains('fullscreen-mode')) {
-          if (!document.activeElement || !document.activeElement.classList.contains('channel-item')) {
-            e.preventDefault(); exitFullScreen();
-          }
+          e.preventDefault();
+          exitFullScreen();
         }
       }
     });
@@ -198,32 +207,20 @@
       favBtn.style.color = channel.isFavorite ? '#ffde03' : '#aaa';
       updateCounts();
 
-      // بەشی گرنگ: ئەگەر تەلەفزیۆنەکە توانای هەبوو (AndroidBridge) ئەوا دەینێرێت بۆ پلەیەری ناوخۆیی تیڤییەکە (VLC)
-      if (window.AndroidBridge && window.AndroidBridge.playInExo) {
-        
-        // ڤیدیۆی ناو براوزەرەکە دەوەستێنین
-        video.pause();
-        video.style.display = 'none';
-        nativeMsg.style.display = 'flex';
-        
-        // فەرمان دەدەین بە تیڤییەکە پلەیەرە خێراکەی خۆی بکاتەوە
-        window.AndroidBridge.playInExo(channel.url, channel.name);
-
-      } else {
-        // ئەگەر لەسەر کۆمپیوتەر یان مۆبایلی ئاسایی بوو (نەک ئەپەکە)
-        video.style.display = 'block';
-        nativeMsg.style.display = 'none';
-        
-        if (Hls.isSupported()) {
-          if (hls) hls.destroy();
-          hls = new Hls();
-          hls.loadSource(channel.url);
-          hls.attachMedia(video);
-          hls.on(Hls.Events.MANIFEST_PARSED, () => video.play().catch(e=>console.log(e)));
-        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-          video.src = channel.url;
-          video.play();
-        }
+      // بەکارهێنانی پلەیەری وێب بۆ شاشە بچووکەکە
+      if (Hls.isSupported()) {
+        if (hls) hls.destroy();
+        const hlsConfig = {
+          maxBufferLength: 30, // کەمکراوەتەوە بۆ ئەوەی خێرا لۆد بێت لە شاشە بچووکەکە
+          enableWorker: true
+        };
+        hls = new Hls(hlsConfig);
+        hls.loadSource(channel.url);
+        hls.attachMedia(video);
+        hls.on(Hls.Events.MANIFEST_PARSED, () => video.play().catch(e=>console.log(e)));
+      } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+        video.src = channel.url;
+        video.play();
       }
     }
 
