@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>REBAZ TV</title>
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@1.3.5/dist/hls.light.min.js"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@300;400;700&display=swap');
     
@@ -13,7 +14,9 @@
     /* Header (سەرەوە) - ڕێک وەک وێنە کۆنەکە */
     .header { height: 60px; display: flex; align-items: center; justify-content: space-between; padding: 0 30px; background: linear-gradient(to bottom, #111832, #0b1021); }
     .logo { font-size: 24px; font-weight: bold; letter-spacing: 1px; color: #fff; }
-    .search-box { background: #1f2747; border-radius: 20px; padding: 6px 15px; display: flex; align-items: center; width: 180px; border: 1px solid #2a345c; }
+    .header-left { display: flex; align-items: center; gap: 15px; }
+    .header-icons { display: flex; gap: 10px; font-size: 18px; cursor: pointer; opacity: 0.8; }
+    .search-box { background: #1f2747; border-radius: 20px; padding: 6px 15px; display: flex; align-items: center; width: 220px; border: 1px solid #2a345c; }
     .search-box input { background: transparent; border: none; color: #fff; width: 100%; outline: none; margin-right: 8px; text-align: right; font-size: 14px; }
     .search-box span { font-size: 14px; opacity: 0.7; }
 
@@ -30,16 +33,16 @@
     .channel-item { display: flex; align-items: center; justify-content: flex-start; gap: 15px; padding: 12px 15px; background: #161c33; border: 1px solid #2a345c; border-radius: 8px; cursor: pointer; transition: 0.2s; outline: none; }
     .channel-item.active, .channel-item:focus { background: #1f2747; border-color: #ffde03; color: #ffde03; }
     
-    /* ٣. بەشی چەپ: شاشە بچووکەکە (Preview Box) بێ کێشەی دەبڵ شاشە */
+    /* ٣. بەشی چەپ: شاشەی پریڤیو (Video Preview) */
     .preview-section { flex: 1; display: flex; flex-direction: column; }
-    .video-container { width: 100%; aspect-ratio: 16/9; background: #111832; border-radius: 12px; overflow: hidden; position: relative; border: 2px solid #2a345c; box-shadow: 0 10px 30px rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 15px; }
-    .preview-icon { font-size: 50px; }
-    .preview-text { font-size: 16px; color: #ffde03; font-weight: bold; }
+    .video-container { width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 12px; overflow: hidden; position: relative; border: 2px solid transparent; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+    .video-container video { width: 100%; height: 100%; object-fit: contain; }
     .channel-title { font-size: 28px; font-weight: bold; margin-top: 20px; text-align: right; }
 
     /* Footer (خوارەوە) */
     .footer { height: 40px; display: flex; align-items: center; justify-content: flex-end; gap: 25px; padding: 0 30px; font-size: 14px; color: #888; }
-    .footer span { display: flex; align-items: center; gap: 5px; }
+    .footer span { display: flex; align-items: center; gap: 5px; cursor: pointer; }
+    .footer span:hover { color: #ffde03; }
 
     /* Scrollbar Styling */
     ::-webkit-scrollbar { width: 6px; }
@@ -52,9 +55,16 @@
   <div class="header">
     <div class="logo">REBAZ TV ‹</div>
     
-    <div class="search-box">
-      <input type="text" placeholder="گەڕان...">
-      <span>🔍</span>
+    <div class="header-left">
+      <div class="header-icons">
+        <span>⚙️</span>
+        <span>🎬</span>
+        <span>📺</span>
+      </div>
+      <div class="search-box">
+        <input type="text" placeholder="گەڕان...">
+        <span>🔍</span>
+      </div>
     </div>
   </div>
 
@@ -73,8 +83,7 @@
 
     <div class="preview-section">
       <div class="video-container" id="videoContainer">
-        <div class="preview-icon">📺</div>
-        <div class="preview-text" id="previewMsg">دوگمەی OK داگرە بۆ لێدانی کەناڵ</div>
+        <video id="videoPlayer" autoplay></video>
       </div>
       <div class="channel-title" id="currentChannelTitle">ناوی کەناڵ</div>
     </div>
@@ -82,7 +91,7 @@
   </div>
 
   <div class="footer">
-    <span>▷ پەخشی دەرەکی</span>
+    <span id="externalPlayBtn">▷ پەخشی دەرەکی</span>
     <span>🕒 لە ئەرشیف</span>
     <span>♡ دڵخوازەکان</span>
   </div>
@@ -96,11 +105,13 @@
       { id: 5, name: "Reng Documentary", cat: "doc", url: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8" }
     ];
 
+    const video = document.getElementById('videoPlayer');
     const channelListEl = document.getElementById('channelList');
     const currentChannelTitle = document.getElementById('currentChannelTitle');
-    const previewMsg = document.getElementById('previewMsg');
+    const externalPlayBtn = document.getElementById('externalPlayBtn');
     
-    let activeChannelId = null;
+    let hls = null;
+    let activeChannel = null;
     let currentCategory = 'all';
 
     function renderChannels() {
@@ -112,15 +123,20 @@
 
       filtered.forEach(ch => {
         const item = document.createElement('div');
-        item.className = `channel-item ${ch.id === activeChannelId ? 'active' : ''}`;
+        item.className = `channel-item ${activeChannel && ch.id === activeChannel.id ? 'active' : ''}`;
         item.tabIndex = 0;
         item.innerHTML = `<span>${ch.name}</span>`;
         
-        item.onclick = () => handleChannelClick(ch, item);
+        item.onclick = () => handleChannelSelect(ch, item);
         item.onkeydown = (e) => {
           if (e.key === 'Enter') {
             e.preventDefault();
-            handleChannelClick(ch, item);
+            // ئەگەر دووەم جار لەسەر هەمان کەناڵ OK داگیرا، ڕاستەوخۆ دەچێتە پلەری دەرەکی
+            if (activeChannel && activeChannel.id === ch.id) {
+              openExternalPlayer();
+            } else {
+              handleChannelSelect(ch, item);
+            }
           }
         };
         channelListEl.appendChild(item);
@@ -138,33 +154,68 @@
       catEl.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); selectCat(); } };
     });
 
-    function handleChannelClick(channel, element) {
-      activeChannelId = channel.id;
+    function handleChannelSelect(channel, element) {
+      activeChannel = channel;
       currentChannelTitle.textContent = channel.name;
-      previewMsg.textContent = "لێدان لە پلەری دەرەکی...";
-
+      
       document.querySelectorAll('.channel-item').forEach(el => el.classList.remove('active'));
       if (element) {
         element.classList.add('active');
         element.focus();
       }
 
-      // ڕاستەوخۆ کردنەوەی پلەری دەرەکی (VLC / ExoPlayer) بێ کێشەی دەبڵ شاشە
-      if (window.AndroidBridge && window.AndroidBridge.playInExo) {
-        window.AndroidBridge.playInExo(channel.url, channel.name);
-      } else {
-        // بۆ تاقیکردنەوە لەسەر کۆمپیوتەر
-        console.log("Playing:", channel.url);
+      // لێدان لە شاشەی پریڤیو (بێ کێشە)
+      if (Hls.isSupported()) {
+        if (hls) {
+          hls.destroy();
+        }
+        hls = new Hls({ maxBufferLength: 30 });
+        hls.loadSource(channel.url);
+        hls.attachMedia(video);
+        hls.on(Hls.Events.MANIFEST_PARSED, () => {
+          video.play().catch(e => console.log(e));
+        });
+      } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+        video.src = channel.url;
+        video.play();
       }
     }
 
-    // کارپێکردنی یەکەم کەناڵ لە سەرەتادا
-    renderChannels();
-    // دیاریكردنی ناوی کەناڵی یەکەم بێ لێدانی ڤیدیۆی ناو وێب
-    if(channels.length > 0) {
-      currentChannelTitle.textContent = channels[0].name;
-      activeChannelId = channels[0].id;
+    // کردنەوەی پلەری دەرەکی (VLC/Exo) بە بێ کێشەی دەبڵ شاشە
+    function openExternalPlayer() {
+      if (!activeChannel) return;
+
+      // ١. کوژاندنەوە و لەناوبردنی تەواوی ڤیدیۆی پریڤیو لە وێبەکەدا
+      if (hls) {
+        hls.destroy();
+        hls = null;
+      }
+      video.pause();
+      video.removeAttribute('src');
+      video.load();
+
+      // ٢. بانگکردنی پلەری دەرەکی ئەپەکە
+      if (window.AndroidBridge && window.AndroidBridge.playInExo) {
+        window.AndroidBridge.playInExo(activeChannel.url, activeChannel.name);
+      } else {
+        console.log("External Player triggered for:", activeChannel.url);
+      }
+    }
+
+    // بەستنەوەی دوگمەی پەخشی دەرەکی لە فوتەر
+    externalPlayBtn.onclick = openExternalPlayer;
+    externalPlayBtn.tabIndex = 0;
+    externalPlayBtn.onkeydown = (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        openExternalPlayer();
+      }
+    };
+
+    // کارپێکردنی یەکەم کەناڵ لە پریڤیو لە سەرەتادا
+    if (channels.length > 0) {
       renderChannels();
+      handleChannelSelect(channels[0], document.querySelector('.channel-item'));
     }
   </script>
 </body>
