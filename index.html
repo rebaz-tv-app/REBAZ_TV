@@ -13,27 +13,25 @@
     
     /* Header (سەرەوە) */
     .header { height: 60px; display: flex; align-items: center; justify-content: space-between; padding: 0 30px; background: linear-gradient(to bottom, #111832, #0b1021); }
-    .header-icons { display: flex; gap: 15px; }
-    .header-icons span { background: #1f2747; padding: 8px 12px; border-radius: 50%; cursor: pointer; }
-    .search-box { background: #1f2747; border-radius: 20px; padding: 8px 20px; display: flex; align-items: center; width: 300px; border: 1px solid #2a345c; }
-    .search-box input { background: transparent; border: none; color: #fff; width: 100%; outline: none; margin-right: 10px; text-align: right; }
-    .logo { font-size: 24px; font-weight: bold; letter-spacing: 1px; }
+    .logo { font-size: 24px; font-weight: bold; letter-spacing: 1px; color: #fff; }
+    .search-box { background: #1f2747; border-radius: 20px; padding: 6px 15px; display: flex; align-items: center; width: 180px; border: 1px solid #2a345c; }
+    .search-box input { background: transparent; border: none; color: #fff; width: 100%; outline: none; margin-right: 8px; text-align: right; font-size: 14px; }
+    .search-box span { font-size: 14px; opacity: 0.7; }
 
     /* Main Area (ناوەڕاست) */
     .main-content { flex: 1; display: flex; padding: 20px; gap: 20px; height: calc(100vh - 100px); }
 
-    /* Categories (ڕاست) */
+    /* بەشی ڕاست: پاکێجەکان */
     .categories { width: 220px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; }
     .cat-item { padding: 15px; background: #161c33; border: 1px solid #2a345c; border-radius: 8px; cursor: pointer; text-align: right; color: #ccc; transition: 0.2s; outline: none; }
     .cat-item.active, .cat-item:focus { background: #1f2747; border-color: #ffde03; color: #ffde03; font-weight: bold; }
 
-    /* Channels (ناوەڕاست) */
+    /* بەشی ناوەڕاست: کەناڵەکان */
     .channels { width: 280px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; }
     .channel-item { display: flex; align-items: center; justify-content: flex-start; gap: 15px; padding: 12px 15px; background: #161c33; border: 1px solid #2a345c; border-radius: 8px; cursor: pointer; transition: 0.2s; outline: none; }
     .channel-item.active, .channel-item:focus { background: #1f2747; border-color: #ffde03; color: #ffde03; }
-    .channel-item img { width: 40px; height: 40px; border-radius: 5px; object-fit: cover; background: #000; }
     
-    /* Video Preview (چەپ) */
+    /* بەشی چەپ: شاشە بچووکەکە */
     .preview-section { flex: 1; display: flex; flex-direction: column; }
     .video-container { width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 12px; overflow: hidden; position: relative; border: 2px solid transparent; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
     .video-container video { width: 100%; height: 100%; object-fit: contain; }
@@ -52,36 +50,32 @@
 <body>
 
   <div class="header">
-    <div class="header-icons">
-      <span>⚙️</span>
-      <span>🎬</span>
-      <span>📺</span>
-      <div class="search-box">
-        <input type="text" placeholder="گەڕان...">
-        <span>🔍</span>
-      </div>
-    </div>
     <div class="logo">REBAZ TV ‹</div>
+    
+    <div class="search-box">
+      <input type="text" placeholder="گەڕان...">
+      <span>🔍</span>
+    </div>
   </div>
 
   <div class="main-content">
     
-    <div class="preview-section">
-      <div class="video-container" id="videoContainer">
-        <video id="videoPlayer" autoplay></video>
-      </div>
-      <div class="channel-title" id="currentChannelTitle">ناوی کەناڵ</div>
-    </div>
-
-    <div class="channels" id="channelList">
-      </div>
-
     <div class="categories" id="categoryList">
       <div class="cat-item active" tabindex="0" data-cat="all">هەموو کەناڵەکان</div>
       <div class="cat-item" tabindex="0" data-cat="news">هەواڵ</div>
       <div class="cat-item" tabindex="0" data-cat="local">کوردی ناوخۆیی</div>
       <div class="cat-item" tabindex="0" data-cat="sports">وەرزش</div>
       <div class="cat-item" tabindex="0" data-cat="doc">دۆکیۆمێنتاری</div>
+    </div>
+
+    <div class="channels" id="channelList">
+      </div>
+
+    <div class="preview-section">
+      <div class="video-container" id="videoContainer">
+        <video id="videoPlayer" autoplay></video>
+      </div>
+      <div class="channel-title" id="currentChannelTitle">ناوی کەناڵ</div>
     </div>
 
   </div>
@@ -93,7 +87,6 @@
   </div>
 
   <script>
-    // داتای کەناڵەکان - دەتوانیت لێرە زیاد و کەمیان بکەیت
     const channels = [
       { id: 1, name: "Shna Documentary", cat: "doc", url: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8" },
       { id: 2, name: "K24 Documentary", cat: "doc", url: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8" },
@@ -110,7 +103,6 @@
     let activeChannelId = null;
     let currentCategory = 'all';
 
-    // نیشاندانی کەناڵەکان بەپێی جۆر
     function renderChannels() {
       channelListEl.innerHTML = '';
       let filtered = channels;
@@ -124,10 +116,7 @@
         item.tabIndex = 0;
         item.innerHTML = `<span>${ch.name}</span>`;
         
-        // کاتێک بە ماوس یان ڕیمۆت کلیک کرا
         item.onclick = () => handleChannelClick(ch, item);
-        
-        // کاتێک دوگمەی OK (Enter) داگیرا
         item.onkeydown = (e) => {
           if (e.key === 'Enter') {
             e.preventDefault();
@@ -138,7 +127,6 @@
       });
     }
 
-    // کۆنترۆڵکردنی هاوپۆلەکان
     document.querySelectorAll('.cat-item').forEach(catEl => {
       const selectCat = () => {
         document.querySelectorAll('.cat-item').forEach(el => el.classList.remove('active'));
@@ -150,18 +138,14 @@
       catEl.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); selectCat(); } };
     });
 
-    // کرداری کلیک یان OK
     function handleChannelClick(channel, element) {
       if (activeChannelId === channel.id) {
-        // ئەگەر پێشتر لە پریڤیو ئیشی دەکرد و دووبارە OK داگیرا، با فول سکرین بێت بە Native Player
         goFullScreenNative(channel);
       } else {
-        // ئەگەر کەناڵێکی نوێ بوو، سەرەتا لە شاشە بچووکەکە لێی بدە
         playInPreview(channel, element);
       }
     }
 
-    // لێدانی ڤیدیۆ لە شاشە بچووکەکە
     function playInPreview(channel, element) {
       activeChannelId = channel.id;
       currentChannelTitle.textContent = channel.name;
@@ -173,36 +157,50 @@
       }
 
       if (Hls.isSupported()) {
-        if (hls) hls.destroy();
+        if (hls) {
+            hls.destroy();
+        }
         hls = new Hls({ maxBufferLength: 30 });
         hls.loadSource(channel.url);
         hls.attachMedia(video);
-        hls.on(Hls.Events.MANIFEST_PARSED, () => video.play().catch(e => console.log(e)));
+        hls.on(Hls.Events.MANIFEST_PARSED, () => {
+            video.play().catch(e => console.log(e));
+        });
       } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
         video.src = channel.url;
         video.play();
       }
     }
 
-    // ناردنی ڤیدیۆ بۆ پلەیەری ئۆرجیناڵی ئەندرۆید (VLC) بە فول سکرین
+    // چارەسەری بنەڕەتی بۆ کێشەی دەبڵ شاشە
     function goFullScreenNative(channel) {
       if (window.AndroidBridge && window.AndroidBridge.playInExo) {
-        // گرنگ: ڤیدیۆی وێبەکە دەوەستێنین بۆ ئەوەی دەنگ تێکەڵ نەبێت (بنبڕکردنی کێشەی دەبڵ شاشە)
-        video.pause();
         
-        // پلەیەری ئەپەکە دەکەینەوە
+        // 1. لەناوبردنی پلەیەری وێب بە تەواوی
+        if (hls) {
+            hls.destroy();
+            hls = null;
+        }
+        video.pause();
+        video.removeAttribute('src'); // سڕینەوەی سۆرسەکەی بۆ دڵنیایی
+        video.load(); 
+
+        // 2. کردنەوەی ئەپە ئەندرۆیدەکە بێ کێشە
         window.AndroidBridge.playInExo(channel.url, channel.name);
       } else {
-        // ئەگەر لەسەر کۆمپیوتەر یان براوزەری ئاسایی بوو
         if (video.requestFullscreen) video.requestFullscreen();
       }
     }
 
-    // هەرکاتێک لە پلەری ئەندرۆیدەکە گەڕایتەوە دواوە (Back)، ڤیدیۆ بچووکەکە خۆی دەست پێ دەکاتەوە
+    // کاتێک لە پلەیەری ئەندرۆیدەکە بە دوگمەی (گەڕانەوە - Back) دەگەڕێیتەوە
+    // ڤیدیۆکە سەرلەنوێ لۆد دەکەینەوە بۆ شاشە بچووکەکە
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible' && activeChannelId) {
-         // کاتێک ئەپەکە دێتەوە سەر شاشە، با ڤیدیۆ بچووکەکە بەردەوام بێت
-         video.play().catch(e => console.log(e));
+         const currentCh = channels.find(c => c.id === activeChannelId);
+         if (currentCh) {
+             const activeItem = document.querySelector('.channel-item.active');
+             playInPreview(currentCh, activeItem);
+         }
       }
     });
 
